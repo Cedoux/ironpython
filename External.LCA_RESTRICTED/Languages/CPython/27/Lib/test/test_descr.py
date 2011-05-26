@@ -876,7 +876,7 @@ class ClassPropertiesAndMethods(unittest.TestCase):
     # see "A Monotonic Superclass Linearization for Dylan",
     # by Kim Barrett et al. (OOPSLA 1996)
     def test_consistency_with_epg(self):
-        # Testing consistentcy with EPG...
+        # Testing consistency with EPG...
         class Pane(object): pass
         class ScrollingMixin(object): pass
         class EditingMixin(object): pass
@@ -4282,7 +4282,7 @@ order (MRO) for bases """
         except TypeError:
             pass
         else:
-            self.fail("Carlo Verre __setattr__ suceeded!")
+            self.fail("Carlo Verre __setattr__ succeeded!")
         try:
             object.__delattr__(str, "lower")
         except TypeError:
@@ -4534,11 +4534,11 @@ order (MRO) for bases """
             __getattr__ = descr
 
         self.assertRaises(AttributeError, getattr, A(), "attr")
-        self.assertEquals(descr.counter, 1)
+        self.assertEqual(descr.counter, 1)
         self.assertRaises(AttributeError, getattr, B(), "attr")
-        self.assertEquals(descr.counter, 2)
+        self.assertEqual(descr.counter, 2)
         self.assertRaises(AttributeError, getattr, C(), "attr")
-        self.assertEquals(descr.counter, 4)
+        self.assertEqual(descr.counter, 4)
 
         import gc
         class EvilGetattribute(object):
@@ -4553,6 +4553,17 @@ order (MRO) for bases """
 
         self.assertRaises(AttributeError, getattr, EvilGetattribute(), "attr")
 
+    def test_abstractmethods(self):
+        # type pretends not to have __abstractmethods__.
+        self.assertRaises(AttributeError, getattr, type, "__abstractmethods__")
+        class meta(type):
+            pass
+        self.assertRaises(AttributeError, getattr, meta, "__abstractmethods__")
+        class X(object):
+            pass
+        with self.assertRaises(AttributeError):
+            del X.__abstractmethods__
+
 
 class DictProxyTests(unittest.TestCase):
     def setUp(self):
@@ -4565,7 +4576,7 @@ class DictProxyTests(unittest.TestCase):
         # Testing dict-proxy iterkeys...
         keys = [ key for key in self.C.__dict__.iterkeys() ]
         keys.sort()
-        self.assertEquals(keys, ['__dict__', '__doc__', '__module__',
+        self.assertEqual(keys, ['__dict__', '__doc__', '__module__',
             '__weakref__', 'meth'])
 
     def test_iter_values(self):

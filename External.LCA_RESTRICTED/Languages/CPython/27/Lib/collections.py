@@ -12,12 +12,38 @@ import sys as _sys
 import heapq as _heapq
 from itertools import repeat as _repeat, chain as _chain, starmap as _starmap, \
                       ifilter as _ifilter, imap as _imap
+try:
+    from thread import get_ident
+except ImportError:
+    from dummy_thread import get_ident
+
+def _recursive_repr(user_function):
+    'Decorator to make a repr function return "..." for a recursive call'
+    repr_running = set()
+
+    def wrapper(self):
+        key = id(self), get_ident()
+        if key in repr_running:
+            return '...'
+        repr_running.add(key)
+        try:
+            result = user_function(self)
+        finally:
+            repr_running.discard(key)
+        return result
+
+    # Can't use functools.wraps() here because of bootstrap issues
+    wrapper.__module__ = getattr(user_function, '__module__')
+    wrapper.__doc__ = getattr(user_function, '__doc__')
+    wrapper.__name__ = getattr(user_function, '__name__')
+    return wrapper
+
 
 ################################################################################
 ### OrderedDict
 ################################################################################
 
-class OrderedDict(dict, MutableMapping):
+class OrderedDict(dict):
     'Dictionary that remembers insertion order'
     # An inherited dict maps keys to values.
     # The inherited dict provides __getitem__, __len__, __contains__, and get.
@@ -45,7 +71,7 @@ class OrderedDict(dict, MutableMapping):
             NEXT = 1
             root[PREV] = root[NEXT] = root
             self.__map = {}
-        self.update(*args, **kwds)
+        self.__update(*args, **kwds)
 
     def __setitem__(self, key, value, PREV=0, NEXT=1, dict_setitem=dict.__setitem__):
         'od.__setitem__(i, y) <==> od[i]=y'
@@ -108,9 +134,7 @@ class OrderedDict(dict, MutableMapping):
             pass
         dict.clear(self)
 
-    setdefault = MutableMapping.setdefault
-    update = MutableMapping.update
-    pop = MutableMapping.pop
+    update = __update = MutableMapping.update
     keys = MutableMapping.keys
     values = MutableMapping.values
     items = MutableMapping.items
@@ -118,6 +142,36 @@ class OrderedDict(dict, MutableMapping):
     itervalues = MutableMapping.itervalues
     iteritems = MutableMapping.iteritems
     __ne__ = MutableMapping.__ne__
+
+    def viewkeys(self):
+        "od.viewkeys() -> a set-like object providing a view on od's keys"
+        return KeysView(self)
+
+    def viewvalues(self):
+        "od.viewvalues() -> an object providing a view on od's values"
+        return ValuesView(self)
+
+    def viewitems(self):
+        "od.viewitems() -> a set-like object providing a view on od's items"
+        return ItemsView(self)
+
+    __marker = object()
+
+    def pop(self, key, default=__marker):
+        if key in self:
+            result = self[key]
+            del self[key]
+            return result
+        if default is self.__marker:
+            raise KeyError(key)
+        return default
+
+    def setdefault(self, key, default=None):
+        'od.setdefault(k[,d]) -> od.get(k,d), also set od[k]=d if k not in od'
+        if key in self:
+            return self[key]
+        self[key] = default
+        return default
 
     def popitem(self, last=True):
         '''od.popitem() -> (k, v), return and remove a (key, value) pair.
@@ -130,6 +184,7 @@ class OrderedDict(dict, MutableMapping):
         value = self.pop(key)
         return key, value
 
+    @_recursive_repr
     def __repr__(self):
         'od.__repr__() <==> repr(od)'
         if not self:
@@ -160,9 +215,6 @@ class OrderedDict(dict, MutableMapping):
             return len(self)==len(other) and \
                    all(_imap(_eq, self.iteritems(), other.iteritems()))
         return dict.__eq__(self, other)
-
-    def __del__(self):
-        self.clear()                # eliminate cyclical references
 
 
 ################################################################################
@@ -292,16 +344,16 @@ class Counter(dict):
     or multiset.  Elements are stored as dictionary keys and their counts
     are stored as dictionary values.
 
-    >>> c = Counter('abracadabra')      # count elements from a string
+    >>> c = Counter('abcdeabcdabcaba')  # count elements from a string
 
     >>> c.most_common(3)                # three most common elements
-    [('a', 5), ('r', 2), ('b', 2)]
+    [('a', 5), ('b', 4), ('c', 3)]
     >>> sorted(c)                       # list all unique elements
-    ['a', 'b', 'c', 'd', 'r']
+    ['a', 'b', 'c', 'd', 'e']
     >>> ''.join(sorted(c.elements()))   # list elements with repetitions
-    'aaaaabbcdrr'
+    'aaaaabbbbcccdde'
     >>> sum(c.values())                 # total of all counts
-    11
+    15
 
     >>> c['a']                          # count of letter 'a'
     5
@@ -309,8 +361,8 @@ class Counter(dict):
     ...     c[elem] += 1                # by adding 1 to each element's count
     >>> c['a']                          # now there are seven 'a'
     7
-    >>> del c['r']                      # remove all 'r'
-    >>> c['r']                          # now there are zero 'r'
+    >>> del c['b']                      # remove all 'b'
+    >>> c['b']                          # now there are zero 'b'
     0
 
     >>> d = Counter('simsalabim')       # make another counter
@@ -349,6 +401,7 @@ class Counter(dict):
         >>> c = Counter(a=4, b=2)                   # a new counter from keyword args
 
         '''
+        super(Counter, self).__init__()
         self.update(iterable, **kwds)
 
     def __missing__(self, key):
@@ -360,8 +413,8 @@ class Counter(dict):
         '''List the n most common elements and their counts from the most
         common to the least.  If n is None, then list all element counts.
 
-        >>> Counter('abracadabra').most_common(3)
-        [('a', 5), ('r', 2), ('b', 2)]
+        >>> Counter('abcdeabcdabcaba').most_common(3)
+        [('a', 5), ('b', 4), ('c', 3)]
 
         '''
         # Emulate Bag.sortedByCount from Smalltalk
@@ -427,7 +480,7 @@ class Counter(dict):
                     for elem, count in iterable.iteritems():
                         self[elem] = self_get(elem, 0) + count
                 else:
-                    dict.update(self, iterable) # fast path when counter is empty
+                    super(Counter, self).update(iterable) # fast path when counter is empty
             else:
                 self_get = self.get
                 for elem in iterable:
@@ -463,13 +516,16 @@ class Counter(dict):
             self.subtract(kwds)
 
     def copy(self):
-        'Like dict.copy() but returns a Counter instance instead of a dict.'
-        return Counter(self)
+        'Return a shallow copy.'
+        return self.__class__(self)
+
+    def __reduce__(self):
+        return self.__class__, (dict(self),)
 
     def __delitem__(self, elem):
         'Like dict.__delitem__() but does not raise KeyError for missing values.'
         if elem in self:
-            dict.__delitem__(self, elem)
+            super(Counter, self).__delitem__(elem)
 
     def __repr__(self):
         if not self:
@@ -496,10 +552,13 @@ class Counter(dict):
         if not isinstance(other, Counter):
             return NotImplemented
         result = Counter()
-        for elem in set(self) | set(other):
-            newcount = self[elem] + other[elem]
+        for elem, count in self.items():
+            newcount = count + other[elem]
             if newcount > 0:
                 result[elem] = newcount
+        for elem, count in other.items():
+            if elem not in self and count > 0:
+                result[elem] = count
         return result
 
     def __sub__(self, other):
@@ -512,10 +571,13 @@ class Counter(dict):
         if not isinstance(other, Counter):
             return NotImplemented
         result = Counter()
-        for elem in set(self) | set(other):
-            newcount = self[elem] - other[elem]
+        for elem, count in self.items():
+            newcount = count - other[elem]
             if newcount > 0:
                 result[elem] = newcount
+        for elem, count in other.items():
+            if elem not in self and count < 0:
+                result[elem] = 0 - count
         return result
 
     def __or__(self, other):
@@ -528,11 +590,14 @@ class Counter(dict):
         if not isinstance(other, Counter):
             return NotImplemented
         result = Counter()
-        for elem in set(self) | set(other):
-            p, q = self[elem], other[elem]
-            newcount = q if p < q else p
+        for elem, count in self.items():
+            other_count = other[elem]
+            newcount = other_count if count < other_count else count
             if newcount > 0:
                 result[elem] = newcount
+        for elem, count in other.items():
+            if elem not in self and count > 0:
+                result[elem] = count
         return result
 
     def __and__(self, other):
@@ -545,11 +610,9 @@ class Counter(dict):
         if not isinstance(other, Counter):
             return NotImplemented
         result = Counter()
-        if len(self) < len(other):
-            self, other = other, self
-        for elem in _ifilter(self.__contains__, other):
-            p, q = self[elem], other[elem]
-            newcount = p if p < q else q
+        for elem, count in self.items():
+            other_count = other[elem]
+            newcount = count if count < other_count else other_count
             if newcount > 0:
                 result[elem] = newcount
         return result
