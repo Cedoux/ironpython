@@ -162,8 +162,10 @@ values, however.)
    7
    >>> C["string"].value
    'seven'
-   >>> C.output()
-   'Set-Cookie: number="I7\\012."\r\nSet-Cookie: string="S\'seven\'\\012p1\\012."'
+
+#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
+#>>> C.output()
+#'Set-Cookie: number="I7\\012."\r\nSet-Cookie: string="S\'seven\'\\012p1\\012."'
 
 Be warned, however, if SerialCookie cannot de-serialize a value (because
 it isn't a valid pickle'd object), IT WILL RAISE AN EXCEPTION.
