@@ -162,10 +162,8 @@ values, however.)
    7
    >>> C["string"].value
    'seven'
-
-#http://www.codeplex.com/IronPython/WorkItem/View.aspx?WorkItemId=21116
-#>>> C.output()
-#'Set-Cookie: number="I7\\012."\r\nSet-Cookie: string="S\'seven\'\\012p1\\012."'
+   >>> C.output()
+   'Set-Cookie: number="I7\\012."\r\nSet-Cookie: string="S\'seven\'\\012p1\\012."'
 
 Be warned, however, if SerialCookie cannot de-serialize a value (because
 it isn't a valid pickle'd object), IT WILL RAISE AN EXCEPTION.
@@ -259,6 +257,11 @@ _Translator       = {
     '\030' : '\\030',  '\031' : '\\031',  '\032' : '\\032',
     '\033' : '\\033',  '\034' : '\\034',  '\035' : '\\035',
     '\036' : '\\036',  '\037' : '\\037',
+
+    # Because of the way browsers really handle cookies (as opposed
+    # to what the RFC says) we also encode , and ;
+
+    ',' : '\\054', ';' : '\\073',
 
     '"' : '\\"',       '\\' : '\\\\',
 
@@ -535,6 +538,8 @@ _CookiePattern = re.compile(
     r"\s*=\s*"                    # Equal Sign
     r"(?P<val>"                   # Start of group 'val'
     r'"(?:[^\\"]|\\.)*"'            # Any doublequoted string
+    r"|"                            # or
+    r"\w{3},\s[\w\d-]{9,11}\s[\d:]{8}\sGMT" # Special case for "expires" attr
     r"|"                            # or
     ""+ _LegalCharsPatt +"*"        # Any word or empty string
     r")"                          # End of group 'val'

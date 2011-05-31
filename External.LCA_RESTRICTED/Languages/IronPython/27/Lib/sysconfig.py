@@ -56,11 +56,11 @@ _INSTALL_SCHEMES = {
         'data'   : '{userbase}',
         },
     'nt_user': {
-        'stdlib': '{userbase}/IronPython{py_version_nodot}',
-        'platstdlib': '{userbase}/IronPython{py_version_nodot}',
-        'purelib': '{userbase}/IronPython{py_version_nodot}/site-packages',
-        'platlib': '{userbase}/IronPython{py_version_nodot}/site-packages',
-        'include': '{userbase}/IronPython{py_version_nodot}/Include',
+        'stdlib': '{userbase}/Python{py_version_nodot}',
+        'platstdlib': '{userbase}/Python{py_version_nodot}',
+        'purelib': '{userbase}/Python{py_version_nodot}/site-packages',
+        'platlib': '{userbase}/Python{py_version_nodot}/site-packages',
+        'include': '{userbase}/Python{py_version_nodot}/Include',
         'scripts': '{userbase}/Scripts',
         'data'   : '{userbase}',
         },
@@ -93,21 +93,28 @@ _PREFIX = os.path.normpath(sys.prefix)
 _EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
 _CONFIG_VARS = None
 _USER_BASE = None
+
+def _safe_realpath(path):
+    try:
+        return realpath(path)
+    except OSError:
+        return path
+
 if sys.executable:
-    _PROJECT_BASE = os.path.dirname(realpath(sys.executable))
+    _PROJECT_BASE = os.path.dirname(_safe_realpath(sys.executable))
 else:
     # sys.executable can be empty if argv[0] has been changed and Python is
     # unable to retrieve the real program name
-    _PROJECT_BASE = realpath(os.getcwd())
+    _PROJECT_BASE = _safe_realpath(os.getcwd())
 
 if os.name == "nt" and "pcbuild" in _PROJECT_BASE[-8:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir))
 # PC/VS7.1
 if os.name == "nt" and "\\pc\\v" in _PROJECT_BASE[-10:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 # PC/AMD64
 if os.name == "nt" and "\\pcbuild\\amd64" in _PROJECT_BASE[-14:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 
 def is_python_build():
     for fn in ("Setup.dist", "Setup.local"):
@@ -151,15 +158,13 @@ def _expand_vars(scheme, vars):
     return res
 
 def _get_default_scheme():
-    if sys.platform == 'cli':
-        return 'nt'
     if os.name == 'posix':
         # the default scheme for posix is posix_prefix
         return 'posix_prefix'
     return os.name
 
 def _getuserbase():
-    env_base = os.environ.get("IRONPYTHONUSERBASE", None)
+    env_base = os.environ.get("PYTHONUSERBASE", None)
     def joinuser(*args):
         return os.path.expanduser(os.path.join(*args))
 
@@ -253,6 +258,11 @@ def _parse_makefile(filename, vars=None):
             else:
                 # bogus variable reference; just drop it since we can't deal
                 del notdone[name]
+    # strip spurious spaces
+    for k, v in done.items():
+        if isinstance(v, str):
+            done[k] = v.strip()
+
     # save the results in the global dictionary
     vars.update(done)
     return vars
@@ -261,7 +271,7 @@ def _parse_makefile(filename, vars=None):
 def _get_makefile_filename():
     if _PYTHON_BUILD:
         return os.path.join(_PROJECT_BASE, "Makefile")
-    return os.path.join(get_path('stdlib'), "config", "Makefile")
+    return os.path.join(get_path('platstdlib'), "config", "Makefile")
 
 
 def _init_posix(vars):
@@ -279,7 +289,8 @@ def _init_posix(vars):
     # load the installed pyconfig.h:
     config_h = get_config_h_filename()
     try:
-        parse_config_h(open(config_h), vars)
+        with open(config_h) as f:
+            parse_config_h(f, vars)
     except IOError, e:
         msg = "invalid Python installation: unable to open %s" % config_h
         if hasattr(e, "strerror"):
@@ -316,7 +327,7 @@ def _init_non_posix(vars):
     vars['SO'] = '.pyd'
     vars['EXE'] = '.exe'
     vars['VERSION'] = _PY_VERSION_SHORT_NO_DOT
-    vars['BINDIR'] = os.path.dirname(realpath(sys.executable))
+    vars['BINDIR'] = os.path.dirname(_safe_realpath(sys.executable))
 
 #
 # public APIs
@@ -417,7 +428,7 @@ def get_config_vars(*args):
         _CONFIG_VARS['platbase'] = _EXEC_PREFIX
         _CONFIG_VARS['projectbase'] = _PROJECT_BASE
 
-        if os.name in ('nt', 'os2') or sys.platform == 'cli':
+        if os.name in ('nt', 'os2'):
             _init_non_posix(_CONFIG_VARS)
         if os.name == 'posix':
             _init_posix(_CONFIG_VARS)
@@ -436,8 +447,12 @@ def get_config_vars(*args):
         # from a different directory.
         if _PYTHON_BUILD and os.name == "posix":
             base = _PROJECT_BASE
+            try:
+                cwd = os.getcwd()
+            except OSError:
+                cwd = None
             if (not os.path.isabs(_CONFIG_VARS['srcdir']) and
-                base != os.getcwd()):
+                base != cwd):
                 # srcdir is relative and we are not in the same directory
                 # as the executable. Assume executable is in the build
                 # directory and make srcdir absolute.
@@ -620,13 +635,16 @@ def get_platform():
                 # behaviour.
                 pass
             else:
-                m = re.search(
-                        r'<key>ProductUserVisibleVersion</key>\s*' +
-                        r'<string>(.*?)</string>', f.read())
-                f.close()
-                if m is not None:
-                    macrelease = '.'.join(m.group(1).split('.')[:2])
-                # else: fall back to the default behaviour
+                try:
+                    m = re.search(
+                            r'<key>ProductUserVisibleVersion</key>\s*' +
+                            r'<string>(.*?)</string>', f.read())
+                    f.close()
+                    if m is not None:
+                        macrelease = '.'.join(m.group(1).split('.')[:2])
+                    # else: fall back to the default behaviour
+                finally:
+                    f.close()
 
         if not macver:
             macver = macrelease
@@ -647,8 +665,7 @@ def get_platform():
                 cflags = get_config_vars().get('CFLAGS')
 
                 archs = re.findall('-arch\s+(\S+)', cflags)
-                archs.sort()
-                archs = tuple(archs)
+                archs = tuple(sorted(set(archs)))
 
                 if len(archs) == 1:
                     machine = archs[0]

@@ -24,7 +24,7 @@ Misc variables:
 
 """
 
-__version__ = "$Revision: 72223 $"       # Code version
+__version__ = "$Revision$"       # Code version
 
 from types import *
 from copy_reg import dispatch_table
@@ -1269,22 +1269,22 @@ def encode_long(x):
     r"""Encode a long to a two's complement little-endian binary string.
     Note that 0L is a special case, returning an empty string, to save a
     byte in the LONG1 pickling context.
-    # bug 24549
-    #>>> encode_long(0L)
-    #''
-    #>>> encode_long(255L)
-    #'\xff\x00'
-    #>>> encode_long(32767L)
-    #'\xff\x7f'
-    #>>> encode_long(-256L)
-    #'\x00\xff'
-    #>>> encode_long(-32768L)
-    #'\x00\x80'
-    #>>> encode_long(-128L)
-    #'\x80'
-    #>>> encode_long(127L)
-    #'\x7f'
-    #>>>
+
+    >>> encode_long(0L)
+    ''
+    >>> encode_long(255L)
+    '\xff\x00'
+    >>> encode_long(32767L)
+    '\xff\x7f'
+    >>> encode_long(-256L)
+    '\x00\xff'
+    >>> encode_long(-32768L)
+    '\x00\x80'
+    >>> encode_long(-128L)
+    '\x80'
+    >>> encode_long(127L)
+    '\x7f'
+    >>>
     """
 
     if x == 0:

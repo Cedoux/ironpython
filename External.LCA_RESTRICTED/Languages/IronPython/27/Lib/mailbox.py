@@ -253,8 +253,11 @@ class Maildir(Mailbox):
         tmp_file = self._create_tmp()
         try:
             self._dump_message(message, tmp_file)
-        finally:
-            _sync_close(tmp_file)
+        except BaseException:
+            tmp_file.close()
+            os.remove(tmp_file.name)
+            raise
+        _sync_close(tmp_file)
         if isinstance(message, MaildirMessage):
             subdir = message.get_subdir()
             suffix = self.colon + message.get_info()
@@ -551,7 +554,7 @@ class _singlefileMailbox(Mailbox):
                     f = open(self._path, 'wb+')
                 else:
                     raise NoSuchMailboxError(self._path)
-            elif e.errno == errno.EACCES:
+            elif e.errno in (errno.EACCES, errno.EROFS):
                 f = open(self._path, 'rb')
             else:
                 raise
@@ -700,9 +703,14 @@ class _singlefileMailbox(Mailbox):
     def _append_message(self, message):
         """Append message to mailbox and return (start, stop) offsets."""
         self._file.seek(0, 2)
-        self._pre_message_hook(self._file)
-        offsets = self._install_message(message)
-        self._post_message_hook(self._file)
+        before = self._file.tell()
+        try:
+            self._pre_message_hook(self._file)
+            offsets = self._install_message(message)
+            self._post_message_hook(self._file)
+        except BaseException:
+            self._file.truncate(before)
+            raise
         self._file.flush()
         self._file_length = self._file.tell()  # Record current length of mailbox
         return offsets
@@ -868,18 +876,29 @@ class MH(Mailbox):
             new_key = max(keys) + 1
         new_path = os.path.join(self._path, str(new_key))
         f = _create_carefully(new_path)
+        closed = False
         try:
             if self._locked:
                 _lock_file(f)
             try:
-                self._dump_message(message, f)
+                try:
+                    self._dump_message(message, f)
+                except BaseException:
+                    # Unlock and close so it can be deleted on Windows
+                    if self._locked:
+                        _unlock_file(f)
+                    _sync_close(f)
+                    closed = True
+                    os.remove(new_path)
+                    raise
                 if isinstance(message, MHMessage):
                     self._dump_sequences(message, new_key)
             finally:
                 if self._locked:
                     _unlock_file(f)
         finally:
-            _sync_close(f)
+            if not closed:
+                _sync_close(f)
         return new_key
 
     def remove(self, key):
@@ -1886,7 +1905,7 @@ def _lock_file(f, dotlock=True):
             try:
                 fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except IOError, e:
-                if e.errno in (errno.EAGAIN, errno.EACCES):
+                if e.errno in (errno.EAGAIN, errno.EACCES, errno.EROFS):
                     raise ExternalClashError('lockf: lock unavailable: %s' %
                                              f.name)
                 else:
@@ -1896,7 +1915,7 @@ def _lock_file(f, dotlock=True):
                 pre_lock = _create_temporary(f.name + '.lock')
                 pre_lock.close()
             except IOError, e:
-                if e.errno == errno.EACCES:
+                if e.errno in (errno.EACCES, errno.EROFS):
                     return  # Without write access, just skip dotlocking.
                 else:
                     raise
