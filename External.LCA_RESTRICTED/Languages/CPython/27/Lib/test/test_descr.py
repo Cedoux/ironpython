@@ -1718,6 +1718,7 @@ order (MRO) for bases """
             ("__exit__", run_context, swallow, set(), {"__enter__" : iden}),
             ("__complex__", complex, complex_num, set(), {}),
             ("__format__", format, format_impl, set(), {}),
+            ("__dir__", dir, empty_seq, set(), {}),
             ]
 
         class Checker(object):
@@ -4563,6 +4564,22 @@ order (MRO) for bases """
             pass
         with self.assertRaises(AttributeError):
             del X.__abstractmethods__
+
+    def test_proxy_call(self):
+        class FakeStr(object):
+            __class__ = str
+
+        fake_str = FakeStr()
+        # isinstance() reads __class__ on new style classes
+        self.assertTrue(isinstance(fake_str, str))
+
+        # call a method descriptor
+        with self.assertRaises(TypeError):
+            str.split(fake_str)
+
+        # call a slot wrapper descriptor
+        with self.assertRaises(TypeError):
+            str.__add__(fake_str, "abc")
 
 
 class DictProxyTests(unittest.TestCase):

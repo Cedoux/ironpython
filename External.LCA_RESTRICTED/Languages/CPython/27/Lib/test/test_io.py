@@ -798,13 +798,16 @@ class BufferedReaderTest(unittest.TestCase, CommonBufferedTests):
         # Inject some None's in there to simulate EWOULDBLOCK
         rawio = self.MockRawIO((b"abc", b"d", None, b"efg", None, None, None))
         bufio = self.tp(rawio)
-
         self.assertEqual(b"abcd", bufio.read(6))
         self.assertEqual(b"e", bufio.read(1))
         self.assertEqual(b"fg", bufio.read())
         self.assertEqual(b"", bufio.peek(1))
-        self.assertTrue(None is bufio.read())
+        self.assertIsNone(bufio.read())
         self.assertEqual(b"", bufio.read())
+
+        rawio = self.MockRawIO((b"a", None, None))
+        self.assertEqual(b"a", rawio.readall())
+        self.assertIsNone(rawio.readall())
 
     def test_read_past_eof(self):
         rawio = self.MockRawIO((b"abc", b"d", b"efg"))
@@ -1461,6 +1464,32 @@ class BufferedRandomTest(BufferedReaderTest, BufferedWriterTest):
             s = raw.getvalue()
             self.assertEqual(s,
                 b"A" + b"B" * overwrite_size + b"A" * (9 - overwrite_size))
+
+    def test_write_rewind_write(self):
+        # Various combinations of reading / writing / seeking backwards / writing again
+        def mutate(bufio, pos1, pos2):
+            assert pos2 >= pos1
+            # Fill the buffer
+            bufio.seek(pos1)
+            bufio.read(pos2 - pos1)
+            bufio.write(b'\x02')
+            # This writes earlier than the previous write, but still inside
+            # the buffer.
+            bufio.seek(pos1)
+            bufio.write(b'\x01')
+
+        b = b"\x80\x81\x82\x83\x84"
+        for i in range(0, len(b)):
+            for j in range(i, len(b)):
+                raw = self.BytesIO(b)
+                bufio = self.tp(raw, 100)
+                mutate(bufio, i, j)
+                bufio.flush()
+                expected = bytearray(b)
+                expected[j] = 2
+                expected[i] = 1
+                self.assertEqual(raw.getvalue(), expected,
+                                 "failed result for i=%d, j=%d" % (i, j))
 
     def test_truncate_after_read_or_write(self):
         raw = self.BytesIO(b"A" * 10)
@@ -2442,6 +2471,8 @@ class MiscIOTest(unittest.TestCase):
             self.assertRaises(ValueError, f.read)
             if hasattr(f, "read1"):
                 self.assertRaises(ValueError, f.read1, 1024)
+            if hasattr(f, "readall"):
+                self.assertRaises(ValueError, f.readall)
             if hasattr(f, "readinto"):
                 self.assertRaises(ValueError, f.readinto, bytearray(1024))
             self.assertRaises(ValueError, f.readline)
