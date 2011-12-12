@@ -78,6 +78,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 }
             };
 
+#if !ANDROID
             Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) {
                 // Dispatch the registered handler
                 ConsoleCancelEventHandler handler = this.ConsoleCancelEventHandler;
@@ -85,6 +86,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     this.ConsoleCancelEventHandler(sender, e);
                 }
             };
+#endif
 #endif
             _ctrlCEvent = new AutoResetEvent(false);
         }
@@ -97,16 +99,14 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 _errorColor = PickColor(ConsoleColor.Red, ConsoleColor.White);
                 _warningColor = PickColor(ConsoleColor.Yellow, ConsoleColor.White);
             } else {
-#if !SILVERLIGHT
+#if !DLR_NO_CONSOLECOLORS
                 _promptColor = _outColor = _errorColor = _warningColor = Console.ForegroundColor;
 #endif
             }
         }
 
         private static ConsoleColor PickColor(ConsoleColor best, ConsoleColor other) {
-#if SILVERLIGHT
-            return best;
-#else
+#if !DLR_NO_CONSOLECOLORS
             best = IsDark(Console.BackgroundColor) ? MakeLight(best) : MakeDark(best);
             other = IsDark(Console.BackgroundColor) ? MakeLight(other) : MakeDark(other);
 
@@ -115,6 +115,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
             }
 
             return other;
+#else
+            return best;
 #endif
         }
 
@@ -143,14 +145,14 @@ namespace Microsoft.Scripting.Hosting.Shell {
         }
 
         protected void WriteColor(TextWriter output, string str, ConsoleColor c) {
-#if !SILVERLIGHT // Console.ForegroundColor
+#if !DLR_NO_CONSOLECOLORS // Console.ForegroundColor
             ConsoleColor origColor = Console.ForegroundColor;
             Console.ForegroundColor = c;
 #endif
             output.Write(str);
             output.Flush();
 
-#if !SILVERLIGHT // Console.ForegroundColor
+#if !DLR_NO_CONSOLECOLORS // Console.ForegroundColor
             Console.ForegroundColor = origColor;
 #endif
         }
@@ -217,4 +219,3 @@ namespace Microsoft.Scripting.Hosting.Shell {
     }
 
 }
-

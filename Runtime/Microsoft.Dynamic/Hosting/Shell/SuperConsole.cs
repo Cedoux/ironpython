@@ -21,7 +21,7 @@ using Microsoft.Scripting.Utils;
 using System.Text;
 
 namespace Microsoft.Scripting.Hosting.Shell {
-#if !SILVERLIGHT // SuperConsole (ConsoleColor)
+#if !SILVERLIGHT && !ANDROID // SuperConsole (ConsoleColor)
     public sealed class SuperConsole : BasicConsole {
 
         #region Nested types: History, SuperConsoleOptions, Cursor

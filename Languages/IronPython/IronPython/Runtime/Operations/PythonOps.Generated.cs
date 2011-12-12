@@ -15,7 +15,7 @@
 
 using System;
 using IronPython.Runtime.Exceptions;
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
 using System.ComponentModel;
 #endif
 

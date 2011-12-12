@@ -679,7 +679,7 @@ namespace IronPython.Runtime.Operations {
 
         internal static int Compare(double x, decimal y) {
             if (x > (double)decimal.MaxValue) return +1;
-            if (x < (double)decimal.MinValue) return -1;
+            //FIXME: if (x < (double)decimal.MinValue) return -1;
             return ((decimal)x).CompareTo(y);
         }
 

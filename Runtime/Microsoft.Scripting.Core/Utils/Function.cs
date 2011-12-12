@@ -19,6 +19,7 @@ namespace Microsoft.Scripting.Utils {
 namespace System {
 #endif
 
+#if !ANDROID
     #region Generated Func Types
 
     // *** BEGIN GENERATED CODE ***
@@ -642,6 +643,6 @@ namespace System {
 #endif
 
     // *** END GENERATED CODE ***
-
     #endregion
+#endif
 }

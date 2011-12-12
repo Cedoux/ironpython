@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT // Remoting
+#if !DLR_NO_REMOTING // Remoting
 
 using System;
 using System.Collections.Generic;

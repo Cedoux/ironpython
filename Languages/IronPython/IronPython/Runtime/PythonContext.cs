@@ -1112,7 +1112,7 @@ namespace IronPython.Runtime {
             return builder.ToString();
         }
 
-#if !SILVERLIGHT
+#if !DLR_NO_CODEDOM
         // Convert a CodeDom to source code, and output the generated code and the line number mappings (if any)
         public override SourceUnit/*!*/ GenerateSourceCode(System.CodeDom.CodeObject codeDom, string path, SourceCodeKind kind) {
             return new IronPython.Hosting.PythonCodeDomCodeGen().GenerateCode((System.CodeDom.CodeMemberMethod)codeDom, this, path, kind);

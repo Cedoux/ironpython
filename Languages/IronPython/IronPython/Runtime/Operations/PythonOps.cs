@@ -51,7 +51,7 @@ using IronPython.Runtime.Binding;
 using IronPython.Runtime.Exceptions;
 using IronPython.Runtime.Types;
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
 using System.ComponentModel;
 #endif
 
@@ -2123,7 +2123,7 @@ namespace IronPython.Runtime.Operations {
             // we reset the abort.
             object res = PythonExceptions.ToPython(clrException);
 
-#if !SILVERLIGHT
+#if !DLR_NO_EXCEPTIONSTATE
             // Check for thread abort exceptions.
             // This is necessary to be able to catch python's KeyboardInterrupt exceptions.
             // CLR restrictions require that this must be called from within a catch block.  This gets

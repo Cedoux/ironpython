@@ -17,7 +17,7 @@ using System;
 using System.Runtime.Serialization;
 
 namespace IronPython.Runtime.Exceptions {
-#if SILVERLIGHT
+#if SILVERLIGHT || ANDROID
     #region Generated WarningException
 
     // *** BEGIN GENERATED CODE ***

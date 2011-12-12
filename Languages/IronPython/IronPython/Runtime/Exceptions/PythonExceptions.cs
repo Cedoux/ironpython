@@ -997,9 +997,9 @@ for k, v in toError.iteritems():
                 // explicit extra conversions that need a special transformation
                 if ((syntax = clrException as SyntaxErrorException) != null) {
                     return SyntaxErrorToPython(syntax);
-                } 
+                }
 
-#if !SILVERLIGHT // ThreadAbortException.ExceptionState
+#if !DLR_NO_EXCEPTIONSTATE // ThreadAbortException.ExceptionState
                 ThreadAbortException ta;
                 if ((ta = clrException as ThreadAbortException) != null) {
                     // transform TA w/ our reason into a KeyboardInterrupt exception.

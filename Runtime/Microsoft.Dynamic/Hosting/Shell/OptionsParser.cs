@@ -235,7 +235,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                     LanguageSetup.Options[arg.Substring(3)] = ScriptingRuntimeHelpers.True; 
                     break;
 
-#if !SILVERLIGHT // Remote console
+#if !DLR_NO_REMOTING // Remote console
                 case Remote.RemoteRuntimeServer.RemoteRuntimeArg:
                     ConsoleOptions.RemoteRuntimeChannel = PopNextArg();
                     break;
@@ -257,7 +257,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         // Note: this works because it runs before the compiler picks up the
         // environment variable
         internal static void SetDlrOption(string option, string value) {
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
             Environment.SetEnvironmentVariable("DLR_" + option, value);
 #endif
         }
@@ -293,7 +293,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 { "-X:SaveAssemblies",           "Save generated assemblies [debug only]" },
                 { "-X:TrackPerformance",         "Track performance sensitive areas [debug only]" },
                 { "-X:PerfStats",                "Print performance stats when the process exists [debug only]" },
-#if !SILVERLIGHT // Remote console
+#if !DLR_NO_REMOTING // Remote console
                 { Remote.RemoteRuntimeServer.RemoteRuntimeArg + " <channel_name>", 
                                                  "Start a remoting server for a remote console session." },
 #endif

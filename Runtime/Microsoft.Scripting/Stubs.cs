@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if SILVERLIGHT && !CLR2 // Stubs
+#if (SILVERLIGHT || ANDROID) && !CLR2 // Stubs
 
 using System;
 using System.Diagnostics;

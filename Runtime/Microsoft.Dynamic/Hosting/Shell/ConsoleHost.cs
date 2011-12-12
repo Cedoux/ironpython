@@ -349,7 +349,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
         private void SetEnvironment() {
             Debug.Assert(Options.EnvironmentVars != null);
 
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
             foreach (string env in Options.EnvironmentVars) {
                 if (!String.IsNullOrEmpty(env)) {
                     string[] var_def = env.Split('=');

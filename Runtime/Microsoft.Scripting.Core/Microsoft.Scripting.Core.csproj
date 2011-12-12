@@ -22,7 +22,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -32,7 +32,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE;$(SignedSym);CLR2</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -41,7 +41,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE;$(SignedSym);CLR2</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -49,7 +49,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>TRACE;DEBUG;SILVERLIGHT;CLR2</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -57,7 +57,7 @@
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Silverlight3Release|AnyCPU' ">
-    <DefineConstants>TRACE;SILVERLIGHT;CLR2</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
@@ -67,22 +67,20 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE;CLR2;ANDROID</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <TargetFrameworkVersion>v2.1</TargetFrameworkVersion>
-    <DlrFrameworkType>Android</DlrFrameworkType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE;CLR2;ANDROID</DefineConstants>
+    <DefineConstants>TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags)</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <TargetFrameworkVersion>v2.1</TargetFrameworkVersion>
-    <DlrFrameworkType>Android</DlrFrameworkType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Hosts\Silverlight\SilverlightVersion.cs" Condition=" '$(SilverlightBuild)' == 'true' ">

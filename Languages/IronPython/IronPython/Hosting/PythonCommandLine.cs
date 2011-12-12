@@ -374,15 +374,15 @@ namespace IronPython.Hosting {
 
             try {
                 result = RunOneInteraction();
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
-            } catch (ThreadAbortException) {
-#else
+#if !DLR_NO_EXCEPTIONSTATE // ThreadAbortException.ExceptionState
             } catch (ThreadAbortException tae) {
                 KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
                 if (pki != null) {
                     Console.WriteLine(Language.FormatException(tae), Style.Error);
                     Thread.ResetAbort();
                 }
+#else
+            } catch (ThreadAbortException) {
 #endif
             }
 

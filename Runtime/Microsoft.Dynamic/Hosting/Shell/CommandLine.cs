@@ -111,7 +111,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
             try {
                 _exitCode = Run();
 
-#if !SILVERLIGHT // ThreadAbortException.ExceptionState
+#if !DLR_NO_EXCEPTIONSTATE // ThreadAbortException.ExceptionState
             } catch (System.Threading.ThreadAbortException tae) {
                 if (tae.ExceptionState is KeyboardInterruptException) {
                     Thread.ResetAbort();
@@ -220,7 +220,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 _scope = _engine.CreateScope();
             }
 
-#if !SILVERLIGHT // Remote console
+#if !DLR_NO_REMOTING // Remote console
             string remoteRuntimeChannel = _options.RemoteRuntimeChannel;
             if (remoteRuntimeChannel != null) {
                 // Publish the ScriptScope so that the host can use it
@@ -261,12 +261,12 @@ namespace Microsoft.Scripting.Hosting.Shell {
         internal static bool IsFatalException(Exception e) {
             ThreadAbortException tae = e as ThreadAbortException;
             if (tae != null) {
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
-                return true;
-#else
+#if !DLR_NO_EXCEPTIONSTATE // ThreadAbortException.ExceptionState
                 if ((tae.ExceptionState as KeyboardInterruptException) == null) {
                     return true;
                 }
+#else
+                return true;
 #endif
             }
             return false;
@@ -289,9 +289,7 @@ namespace Microsoft.Scripting.Hosting.Shell {
 
             try {
                 result = RunOneInteraction();
-#if SILVERLIGHT // ThreadAbortException.ExceptionState
-            } catch (ThreadAbortException) {
-#else
+#if !DLR_NO_EXCEPTIONSTATE // ThreadAbortException.ExceptionState
             } catch (ThreadAbortException tae) {
                 KeyboardInterruptException pki = tae.ExceptionState as KeyboardInterruptException;
                 if (pki != null) {
@@ -300,6 +298,8 @@ namespace Microsoft.Scripting.Hosting.Shell {
                 } else {
                     throw;
                 }
+#else
+                } catch (ThreadAbortException) {
 #endif
             }
 

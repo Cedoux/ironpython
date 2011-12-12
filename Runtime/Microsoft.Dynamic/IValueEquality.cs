@@ -39,6 +39,7 @@ namespace Microsoft.Scripting {
     }
 }
 
+#if !ANDROID
 // IStructuralEquatable/IStructuralComparable are included in .NET 4.0.
 namespace System.Collections {
     /// <summary>
@@ -81,5 +82,6 @@ namespace System.Collections {
         int CompareTo(object other, IComparer comparer);
     }
 }
+#endif
 
 #endif

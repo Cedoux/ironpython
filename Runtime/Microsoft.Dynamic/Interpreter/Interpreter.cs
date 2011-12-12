@@ -214,10 +214,10 @@ namespace Microsoft.Scripting.Interpreter {
                     Debug.Assert(_anyAbortException != null);
 
                     // The current abort reason needs to be preserved.
-#if SILVERLIGHT
-                    currentThread.Abort();
-#else
+#if !DLR_NO_EXCEPTIONSTATE
                     currentThread.Abort(_anyAbortException.ExceptionState);
+#else
+                    currentThread.Abort();
 #endif
                 }
             }

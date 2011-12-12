@@ -17,7 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 
-#if SILVERLIGHT // Stubs
+#if SILVERLIGHT || ANDROID // Stubs
 
 // This is needed so we can build Silverlight version on Codeplex
 // where System.Core namespace is not defined.
@@ -28,6 +28,7 @@ namespace System.Core
 
 namespace System {
 
+#if !ANDROID
     /// <summary>
     /// An application exception.
     /// </summary>
@@ -60,6 +61,20 @@ namespace System {
             HResult = error;
         }
     }
+#endif
+
+    namespace Runtime.InteropServices {
+        /// <summary>
+        /// The Default Parameter Value Attribute.
+        /// </summary>
+        public sealed class DefaultParameterValueAttribute : Attribute {
+            /// <summary>
+            /// The constructor
+            /// </summary>
+            /// <param name="value">The value.</param>
+            public DefaultParameterValueAttribute(object value) { }
+        }
+    }
 
     // We reference these namespaces via "using"
     // We don't actually use them because the code is #if !SILVERLIGHT
@@ -68,6 +83,7 @@ namespace System {
     namespace Security.Policy { class Dummy {} }
     namespace Xml.XPath { class Dummy {} }
 
+#if !ANDROID
     namespace Reflection {
         /// <summary>
         /// PortableExecutableKinds enum.
@@ -89,6 +105,7 @@ namespace System {
             I386 = 1
         }
     }
+#endif
 
     namespace ComponentModel {
 
@@ -104,6 +121,7 @@ namespace System {
         }
     }
 
+#if !ANDROID
     /// <summary>
     /// The serializable attribute.
     /// </summary>
@@ -123,7 +141,9 @@ namespace System {
         public interface ISerializable {
         }
     }
+#endif
 
+#if !ANDROID
     /// <summary>
     /// The ConsoleColor enum.
     /// </summary>
@@ -193,6 +213,7 @@ namespace System {
         /// </summary>
         White = 15,
     }
+#endif
 
 }
 

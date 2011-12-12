@@ -127,7 +127,7 @@ namespace IronPython.Modules {
             }
         }
         
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
         /// <summary>
         /// single instance of environment dictionary is shared between multiple runtimes because the environment
         /// is shared by multiple runtimes.

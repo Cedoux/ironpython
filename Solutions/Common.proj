@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 
-  Settings imported by all *.csproj files. 
+  Settings imported by all *.csproj files.
+  
+  Changes to this file don't seem to get picked up by Visual Studio builds until
+  VS is restarted.
 -->
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
@@ -24,18 +27,49 @@
     <SignAssembly Condition="'$(SignAssembly)' == ''">true</SignAssembly>
     <SignedDir>Unsigned</SignedDir>
   </PropertyGroup>
-  
+
+  <PropertyGroup Condition="'$(Configuration)' == 'v2Debug' or '$(Configuration)' == 'v2Release'">
+    <DlrPlatformFlags>CLR2</DlrPlatformFlags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">
+    <DlrPlatformFlags>CLR4</DlrPlatformFlags>
+  </PropertyGroup>
 
   <!-- Silverlight -->
   <PropertyGroup Condition="'$(Configuration)' == 'Silverlight3Release' or '$(Configuration)' == 'Silverlight3Debug'">
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Silverlight\Runtime\3.0.50106.0</SilverlightPath>
     <SilverlightBuild>true</SilverlightBuild>
     <NoStdLib>true</NoStdLib>
+
+    <DlrPlatformFlags>SILVERLIGHT;CLR2</DlrPlatformFlags>
+    <DlrConfigFlags>DLR_NO_CODEDOM;DLR_NO_CONFIGURATION;DLR_NO_REMOTING;DLR_NO_EXCEPTIONSTATE;DLR_NO_CONSOLECOLORS;DLR_NO_SERIALIZATION</DlrConfigFlags>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Silverlight4Release' or '$(Configuration)' == 'Silverlight4Debug'">
     <SilverlightPath Condition="'$(SilverlightPath)' == ''">$(SolutionDir)..\Util\Silverlight\Runtime\4.0.50524.0</SilverlightPath>
     <SilverlightSdkPath Condition="'$(SilverlightSdkPath)' == ''">$(SolutionDir)..\Util\Silverlight\SDK\4.0</SilverlightSdkPath>
     <SilverlightBuild>true</SilverlightBuild>
     <NoStdLib>true</NoStdLib>
+    
+    <DlrPlatformFlags>SILVERLIGHT;CLR4</DlrPlatformFlags>
+    <DlrConfigFlags>DLR_NO_CODEDOM;DLR_NO_CONFIGURATION;DLR_NO_REMOTING;DLR_NO_EXCEPTIONSTATE;DLR_NO_CONSOLECOLORS;DLR_NO_SERIALIZATION</DlrConfigFlags>
   </PropertyGroup>
+  
+  <!-- Android -->
+  <PropertyGroup Condition="'$(Configuration)' == 'AndroidRelease' or '$(Configuration)' == 'AndroidDebug'">
+    <DlrFrameworkType>Android</DlrFrameworkType>
+    <DlrPlatformFlags>ANDROID;CLR2</DlrPlatformFlags>
+    <DlrConfigFlags>DLR_NO_CODEDOM;DLR_NO_CONFIGURATION;DLR_NO_REMOTING;DLR_NO_EXCEPTIONSTATE;DLR_NO_CONSOLECOLORS;DLR_NO_SERIALIZATION</DlrConfigFlags>
+  </PropertyGroup>
+
+  <!--<Target Name="BeforeBuild">
+    <Message Importance="high" Text="SilverlightBuild = '$(SilverlightBuild)'" />
+    <Message Importance="high" Text="SilverlightPath = '$(SilverlightPath)'" />
+    <Message Importance="high" Text="DlrFrameworkType = '$(DlrFrameworkType)'" />
+    <Message Importance="high" Text="DlrPlatformFlags = '$(DlrPlatformFlags)'" />
+    <Message Importance="high" Text="DlrConfigFlags = '$(DlrConfigFlags)'" />
+    <Message Importance="high" Text="TargetFrameworkProfile = '$(TargetFrameworkProfile)'" />
+    <Message Importance="high" Text="TargetFrameworkIdentifier = '$(TargetFrameworkIdentifier)'" />
+    <Message Importance="high" Text="TargetFrameworkVersion = '$(TargetFrameworkVersion)'" />
+  </Target>-->
 </Project>
