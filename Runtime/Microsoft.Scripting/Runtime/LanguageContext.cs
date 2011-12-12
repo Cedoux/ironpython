@@ -232,7 +232,7 @@ namespace Microsoft.Scripting.Runtime {
             return Options.SearchPaths;
         }
 
-#if !SILVERLIGHT
+#if !DLR_NO_CODEDOM
         // Convert a CodeDom to source code, and output the generated code and the line number mappings (if any)
         public virtual SourceUnit GenerateSourceCode(System.CodeDom.CodeObject codeDom, string path, SourceCodeKind kind) {
             throw new NotImplementedException();

@@ -173,7 +173,7 @@ namespace Microsoft.Scripting.Hosting {
         /// If there is no configuration available returns an empty setup.
         /// </summary>
         public static ScriptRuntimeSetup ReadConfiguration() {
-#if SILVERLIGHT
+#if DLR_NO_CONFIGURATION
             return new ScriptRuntimeSetup();
 #else
             var setup = new ScriptRuntimeSetup();
@@ -182,7 +182,7 @@ namespace Microsoft.Scripting.Hosting {
 #endif
         }
 
-#if !SILVERLIGHT
+#if !DLR_NO_CONFIGURATION
         /// <summary>
         /// Reads setup from a specified XML stream.
         /// </summary>
@@ -203,6 +203,6 @@ namespace Microsoft.Scripting.Hosting {
                 return ReadConfiguration(stream);
             }
         }
-#endif        
+#endif
     }
 }

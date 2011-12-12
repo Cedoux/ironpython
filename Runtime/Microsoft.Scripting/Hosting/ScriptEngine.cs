@@ -370,7 +370,7 @@ namespace Microsoft.Scripting.Hosting {
             return new ScriptSource(this, _language.CreateFileUnit(path, encoding, kind));
         }
 
-#if !SILVERLIGHT
+#if !DLR_NO_CODEDOM
         /// <summary>
         /// This method returns a ScriptSource object from a System.CodeDom.CodeObject.  
         /// This is a factory method for creating a ScriptSources with this language binding.

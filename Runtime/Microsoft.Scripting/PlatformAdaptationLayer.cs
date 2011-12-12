@@ -226,9 +226,11 @@ namespace Microsoft.Scripting {
         public virtual void DeleteFile(string path, bool deleteReadOnly) {
 #if !SILVERLIGHT
             FileInfo info = new FileInfo(path);
+#if !ANDROID
             if (deleteReadOnly && info.IsReadOnly) {
                 info.IsReadOnly = false;
             }
+#endif
             info.Delete();
 #else
             throw new NotImplementedException();
@@ -370,7 +372,7 @@ namespace Microsoft.Scripting {
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public virtual void SetEnvironmentVariable(string key, string value) {
-#if !SILVERLIGHT
+#if !SILVERLIGHT && !ANDROID
             if (value != null && value.Length == 0) {
                 SetEmptyEnvironmentVariable(key);
             } else {

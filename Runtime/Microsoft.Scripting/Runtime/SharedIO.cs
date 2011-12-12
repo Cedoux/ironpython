@@ -122,13 +122,18 @@ namespace Microsoft.Scripting.Runtime {
             if (_inputStream == null) {
                 lock (_mutex) {
                     if (_inputStream == null) {
-#if SILVERLIGHT
-                        _inputEncoding = StringUtils.DefaultEncoding;
-                        _inputStream = new TextStream(Console.In, _inputEncoding);
-#else
-                        _inputStream = ConsoleInputStream.Instance;
+#if !SILVERLIGHT && !ANDROID
                         _inputEncoding = Console.InputEncoding;
+#else
+                        _inputEncoding = StringUtils.DefaultEncoding;
 #endif
+
+#if !SILVERLIGHT
+                        _inputStream = ConsoleInputStream.Instance;
+#else
+                        _inputStream = new TextStream(Console.In, _inputEncoding);
+#endif
+
                         _inputReader = Console.In;
                     }
                 }

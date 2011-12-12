@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if !SILVERLIGHT
+#if !DLR_NO_CONFIGURATION
 
 using System;
 using System.Collections.Generic;
