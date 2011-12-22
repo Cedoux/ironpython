@@ -7,6 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ACDD9B9E-8FE6-439C-9521-1CCBA47F6143}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <OutputPath>$(SolutionDir)..\bin\$(Configuration)</OutputPath>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.Scripting.Metadata</RootNamespace>
     <AssemblyName>Microsoft.Scripting.Metadata</AssemblyName>
@@ -70,6 +71,25 @@
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidDebug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags);CCI</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v2.1</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE;$(SignedSym);$(DlrPlatformFlags);$(DlrConfigFlags);CCI</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <TargetFrameworkVersion>v2.1</TargetFrameworkVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="MemoryMapping.V4.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -94,5 +114,6 @@
   <ItemGroup>
     <None Include="Microsoft.Scripting.Metadata.ruleset" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" '$(SilverlightTreeBuild)' != 'true' " />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition="'$(DlrFrameworkType)' == '' And '$(SilverlightTreeBuild)' != 'true' " />
+  <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" Condition="'$(DlrFrameworkType)' == 'Android'" />
 </Project>
