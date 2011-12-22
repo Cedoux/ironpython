@@ -225,11 +225,11 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' != 'true' ">
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Remoting" />
-    <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" Condition="'$(DlrFrameworkType)' != 'Android'" />
+    <Reference Include="System.Runtime.Remoting" Condition="'$(DlrFrameworkType)' != 'Android'" />
+    <Reference Include="System.Xml" Condition="'$(DlrFrameworkType)' != 'Android'" />
   </ItemGroup>
   <ItemGroup Condition=" '$(SilverlightBuild)' == 'true' ">
     <Reference Include="mscorlib, Version=2.0.5.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e">
