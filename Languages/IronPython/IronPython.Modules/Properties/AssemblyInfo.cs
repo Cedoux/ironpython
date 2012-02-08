@@ -49,8 +49,9 @@ using System.Security;
 
 #if FEATURE_APTCA
 [assembly: AllowPartiallyTrustedCallers]
-#if !CLR2
-[assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
+
+#if FEATURE_SECURITY_RULES
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
 

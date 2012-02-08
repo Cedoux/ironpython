@@ -38,6 +38,10 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AndroidRelease|AnyCPU' ">
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'iOSDebug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'iOSRelease|AnyCPU' ">
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="array.cs" />
     <Compile Include="binascii.cs" />
