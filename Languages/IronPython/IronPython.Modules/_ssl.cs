@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_FULL_NET
+#if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.IO;
@@ -47,7 +47,7 @@ namespace IronPython.Modules {
             context.EnsureModuleException("SSLError", socketError, dict, "SSLError", "ssl");
 
         }
-        #region Stubs for RAND functions
+#region Stubs for RAND functions
 
         // The RAND_ functions are effectively no-ops, as the BCL draws on system sources
         // for cryptographically-strong randomness and doesn't need (or accept) user input
@@ -210,7 +210,7 @@ namespace IronPython.Modules {
             throw ErrorDecoding(context, filename, "certificate not found");
         }
 
-        #region Private Key Parsing
+#region Private Key Parsing
 
         const int ClassOffset = 6;
         const int ClassMask = 0xc0;
@@ -365,7 +365,7 @@ namespace IronPython.Modules {
         public const int PROTOCOL_SSLv23 = 2;
         public const int PROTOCOL_TLSv1 = 3;
 
-        #region Exported constants
+#region Exported constants
 
         public const int SSL_ERROR_SSL = 1;
         public const int SSL_ERROR_WANT_READ = 2;

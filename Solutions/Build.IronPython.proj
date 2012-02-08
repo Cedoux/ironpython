@@ -20,6 +20,7 @@
     <v2BuildDir>$(BinDir)\v2$(BaseConfiguration)</v2BuildDir>
     <AndroidBuildDir>$(BinDir)\Android$(BaseConfiguration)</AndroidBuildDir>
     <WP7BuildDir>$(BinDir)\Silverlight3$(BaseConfiguration)</WP7BuildDir>
+    <iOSBuildDir>$(BinDir)\iOS$(BaseConfiguration)</iOSBuildDir>
     <Silverlight4BuildDir>$(BinDir)\Silverlight4$(BaseConfiguration)</Silverlight4BuildDir>
     <Silverlight5BuildDir>$(BinDir)\Silverlight5$(BaseConfiguration)</Silverlight5BuildDir>
   </PropertyGroup>
@@ -42,6 +43,9 @@
     </BuildProject>
     <BuildProject Include="$(Solution)">
       <Properties>Configuration=Android$(BaseConfiguration)</Properties>
+    </BuildProject>
+    <BuildProject Include="$(Solution)">
+      <Properties>Configuration=iOS$(BaseConfiguration)</Properties>
     </BuildProject>
     <!--<BuildProject Include="$(Solution)" Condition=" '$(Mono)' != 'true' ">
       <Properties>Configuration=Win8$(BaseConfiguration)</Properties>
@@ -172,14 +176,19 @@
     <Copy SourceFiles="@(IronPythonLibs->'$(v2BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Net35" />
 
     <!-- Windows Phone 7.5 -->
-    <Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
+    <!--<Copy SourceFiles="@(DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
     <Copy SourceFiles="@(v2DlrLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
-    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(WP7BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\WP7" />-->
 
     <!-- Mono for Android -->
     <Copy SourceFiles="@(DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
     <Copy SourceFiles="@(v2DlrLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
     <Copy SourceFiles="@(IronPythonLibs->'$(AndroidBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Android" />
+    
+    <!-- MonoTouch (Mono for iOS) -->
+    <Copy SourceFiles="@(DlrLibs->'$(iOSBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\iOS" />
+    <Copy SourceFiles="@(v2DlrLibs->'$(iOSBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\iOS" />
+    <Copy SourceFiles="@(IronPythonLibs->'$(iOSBuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\iOS" />
 
     <!-- Silverlight 4 -->
     <Copy SourceFiles="@(DlrLibs->'$(Silverlight4BuildDir)\%(Identity)')" DestinationFolder="$(StageDir)\Platforms\Sl4" />

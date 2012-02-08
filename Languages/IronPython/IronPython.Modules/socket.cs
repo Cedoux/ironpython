@@ -13,7 +13,7 @@
  *
  * ***************************************************************************/
 
-#if FEATURE_FULL_NET
+#if FEATURE_SYNC_SOCKETS
 
 using System;
 using System.Collections;
@@ -93,7 +93,7 @@ namespace IronPython.Modules {
             + "   with a particular \"file descriptor number\" (as returned by s.fileno()).\n"
             ;
 
-        #region Socket object
+#region Socket object
 
         public static PythonType SocketType = DynamicHelpers.GetPythonTypeFromType(typeof(socket));
 
@@ -108,7 +108,7 @@ namespace IronPython.Modules {
                 + "This module supports only IP sockets. It does not support raw or Unix sockets.\n"
                 + "Both IPv4 and IPv6 are supported.")]
         public class socket : IWeakReferenceable {
-            #region Fields
+#region Fields
 
             /// <summary>
             /// handleToSocket allows us to translate from Python's idea of a socket resource (file
@@ -132,7 +132,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region Public API
+#region Public API
 
             public socket() {
             }
@@ -909,7 +909,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region IWeakReferenceable Implementation
+#region IWeakReferenceable Implementation
 
             WeakRefTracker IWeakReferenceable.GetWeakRef() {
                 return _weakRefTracker;
@@ -926,7 +926,7 @@ namespace IronPython.Modules {
 
             #endregion
 
-            #region Private Implementation
+#region Private Implementation
 
             /// <summary>
             /// Create a Python socket object from an existing .NET socket object
@@ -959,7 +959,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Fields
+#region Fields
 
         private const string AnyAddrToken = "";
         private const string BroadcastAddrToken = "<broadcast>";
@@ -970,7 +970,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Public API
+#region Public API
 
         public static object _GLOBAL_DEFAULT_TIMEOUT = new object();
 
@@ -1554,7 +1554,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Exported constants
+#region Exported constants
 
         public const int AF_APPLETALK = (int)AddressFamily.AppleTalk;
         public const int AF_DECnet = (int)AddressFamily.DecNet;
@@ -1680,7 +1680,7 @@ namespace IronPython.Modules {
 
         #endregion
 
-        #region Private implementation
+#region Private implementation
 
         /// <summary>
         /// Return a standard socket exception (socket.error) whose message and error code come from a SocketException
