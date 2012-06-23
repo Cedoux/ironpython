@@ -199,7 +199,23 @@ namespace TestRunner {
 
             Console.ForegroundColor = originalColor;
 
+            Cleanup(binPath);
+
             return failures.Count;
+        }
+
+        private void Cleanup(string binPath) {
+            var ipy = Path.Combine(binPath, "ipy.exe");
+
+            var victims = Process.GetProcessesByName("ipy").Where(p => p.MainModule.FileName == ipy);
+            foreach (var victim in victims) {
+                try {
+                    Console.WriteLine("ipy.exe ({0}) still running; killing...");
+                    victim.Kill();
+                } catch (Exception e) {
+                    Console.WriteLine(e.Message);
+                }
+            }
         }
 
         private void RunTestForConsole(Test test) {
