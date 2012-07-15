@@ -68,6 +68,7 @@
     <Compile Include="Runtime\Binding\IPythonExpandable.cs" />
     <Compile Include="Runtime\Binding\PythonExtensionBinder.cs" />
     <Compile Include="Runtime\BuiltinPythonModule.cs" />
+    <Compile Include="Runtime\ClrModule.Compilation.cs" />
     <Compile Include="Runtime\ConstantDictionaryStorage.cs" />
     <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />
     <Compile Include="Modules\imp.cs" />

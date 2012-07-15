@@ -2048,7 +2048,7 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
 
             // then let the user intercept and rewrite the type - the user can't create
             // instances of this type yet.
-            _underlyingSystemType = __clrtype__();
+            _underlyingSystemType = __clrtype__(context);
             if (_underlyingSystemType == null) {
                 throw PythonOps.ValueError("__clrtype__ must return a type, not None");
             }
@@ -2321,6 +2321,11 @@ type(name, bases, dict) -> creates a new type instance with the given name, base
         /// types at runtime which include new .NET methods, fields, custom attributes or
         /// other features to better interoperate with .NET.
         /// </summary>
+        [PythonHidden]
+        public virtual Type __clrtype__(CodeContext context) {
+            return __clrtype__();
+        }
+
         [PythonHidden]
         public virtual Type __clrtype__() {
             return _underlyingSystemType;

@@ -206,7 +206,7 @@ class ClrInterface(ClrType):
                 method_builder.SetCustomAttribute(cab)
         
         return method_builder
-	            
+    
     def emit_members(self, typebld):
         self.emit_methods(typebld)
         self.emit_properties(typebld)
@@ -469,7 +469,7 @@ class ClrClass(ClrInterface):
                 method_builder.SetCustomAttribute(cab)
 
         return method_builder
-	            
+
     def map_pinvoke_methods(self, new_type):
         pythonType = clr.GetPythonType(new_type)
         for function_info in self.get_typed_methods():
@@ -478,7 +478,7 @@ class ClrClass(ClrInterface):
                 # Overwrite the Python function with the pinvoke_method
                 pinvoke_method = getattr(pythonType, function.func_name)
                 setattr(self, function.func_name, pinvoke_method)
-	  
+    
     def emit_python_type_field(self, typebld):
         return typebld.DefineField(
             "PythonType",

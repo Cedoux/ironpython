@@ -62,7 +62,7 @@ namespace Microsoft.Scripting.Generation {
             get { return _saveSnippets; }
         }
 
-        private AssemblyGen GetAssembly(bool emitSymbols) {
+        public AssemblyGen GetAssembly(bool emitSymbols) {
             return (emitSymbols) ?
                 GetOrCreateAssembly(emitSymbols,  ref _debugAssembly) :
                 GetOrCreateAssembly(emitSymbols, ref _assembly);
@@ -184,11 +184,19 @@ namespace Microsoft.Scripting.Generation {
         }
 
         public TypeBuilder DefinePublicType(string name, Type parent) {
-            return GetAssembly(false).DefinePublicType(name, parent, false);
+            return DefinePublicType(GetAssembly(false), name, parent);
+        }
+
+        public static TypeBuilder DefinePublicType(AssemblyGen ag, string name, Type parent) {
+            return ag.DefinePublicType(name, parent, false);
         }
 
         public TypeGen DefineType(string name, Type parent, bool preserveName, bool emitDebugSymbols) {
             AssemblyGen ag = GetAssembly(emitDebugSymbols);
+            return DefineType(ag, name, parent, preserveName);
+        }
+
+        public static TypeGen DefineType(AssemblyGen ag, string name, Type parent, bool preserveName) {
             TypeBuilder tb = ag.DefinePublicType(name, parent, preserveName);
             return new TypeGen(ag, tb);
         }

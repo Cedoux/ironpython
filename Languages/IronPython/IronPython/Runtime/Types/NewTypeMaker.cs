@@ -92,6 +92,35 @@ namespace IronPython.Runtime.Types {
         #region Public API
 
 #if FEATURE_REFEMIT
+        public static Type/*!*/ GetNewType(AssemblyGen ag, string/*!*/ typeName, PythonTuple/*!*/ bases) {
+            Assert.NotNull(typeName, bases);
+
+            NewTypeInfo typeInfo = NewTypeInfo.GetTypeInfo(typeName, bases);
+
+            if (typeInfo.BaseType.IsValueType()) {
+                throw PythonOps.TypeError("cannot derive from {0} because it is a value type", typeInfo.BaseType.FullName);
+            } else if (typeInfo.BaseType.IsSealed()) {
+                throw PythonOps.TypeError("cannot derive from {0} because it is sealed", typeInfo.BaseType.FullName);
+            }
+
+            Type ret = _newTypes.GetOrCreateValue(typeInfo,
+                () => {
+                    if (typeInfo.InterfaceTypes.Count == 0) {
+                        // types that the have DynamicBaseType attribute can be used as NewType's directly, no 
+                        // need to create a new type unless we're adding interfaces
+                        object[] attrs = typeInfo.BaseType.GetCustomAttributes(typeof(DynamicBaseTypeAttribute), false);
+                        if (attrs.Length > 0) {
+                            return typeInfo.BaseType;
+                        }
+                    }
+
+                    // creation code                    
+                    return new NewTypeMaker(typeInfo).CreateNewType(ag);
+                });
+            
+            return ret;
+        }
+
         public static Type/*!*/ GetNewType(string/*!*/ typeName, PythonTuple/*!*/ bases) {
             Assert.NotNull(typeName, bases);
 
@@ -248,6 +277,19 @@ namespace IronPython.Runtime.Types {
         private Type CreateNewType() {
             string name = GetName();
             _tg = Snippets.Shared.DefinePublicType(TypePrefix + name, _baseType);
+
+            Dictionary<string, string[]> specialNames = ImplementType();
+
+            Type ret = FinishType();
+
+            AddBaseMethods(ret, specialNames);
+
+            return ret;
+        }
+
+        private Type CreateNewType(AssemblyGen ag) {
+            string name = GetName();
+            _tg = Snippets.DefinePublicType(ag, TypePrefix + name, _baseType);
 
             Dictionary<string, string[]> specialNames = ImplementType();
 
