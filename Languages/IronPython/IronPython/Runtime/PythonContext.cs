@@ -1332,7 +1332,7 @@ namespace IronPython.Runtime {
                 while (ie.MoveNext()) {
                     string str;
                     if (TryConvertToString(ie.Current, out str)) {
-                        string fullName = Path.Combine(str, file);
+                        string fullName = Path.GetFullPath(Path.Combine(str, file));
                         Assembly res;
 
                         if (TryLoadAssemblyFromFileWithPath(fullName, out res)) return res;
