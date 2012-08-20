@@ -873,6 +873,7 @@ namespace IronPython.Runtime.Binding {
 
             // load any cached new types
             NewTypeMaker.LoadNewTypes(asm);
+            NewTypeMaker.LoadCachedTypes(asm);
         }
 
 #if FEATURE_REFEMIT

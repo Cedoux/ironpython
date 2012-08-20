@@ -44,6 +44,7 @@ namespace IronPython.Runtime.Types {
     }
 
     [AttributeUsage(AttributeTargets.Class)]
+    //[Obsolete]
     public sealed class PythonCachedTypeInfoAttribute : Attribute {
     }
 }

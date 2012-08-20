@@ -22,6 +22,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Dynamic;
 using System.Text;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Actions;
@@ -259,6 +260,27 @@ namespace IronPython.Runtime.Types {
             }
         }
 
+        public static void LoadCachedTypes(Assembly asm) {
+            Assert.NotNull(asm);
+
+            foreach(var t in asm.GetTypes()) {
+                var info = Attribute.GetCustomAttribute(t, typeof(PythonCachedTypeAttribute), false) as PythonCachedTypeAttribute;
+                if (info == null)
+                    continue;
+
+                var specialNames = info.CrackSpecialNames();
+                var interfaceTypes = info.CrackInterfaceTypes();
+
+                _newTypes.GetOrCreateValue(
+                    new NewTypeInfo(t.GetBaseType(), interfaceTypes),
+                    () => {
+                        AddBaseMethods(t, specialNames);
+                        return t;
+                    }
+                );
+            }
+        }
+
         /// <summary>
         /// Is this a type used for instances Python types (and not for the types themselves)?
         /// </summary>
@@ -280,7 +302,7 @@ namespace IronPython.Runtime.Types {
 
             Dictionary<string, string[]> specialNames = ImplementType();
 
-            Type ret = FinishType();
+            Type ret = FinishType(specialNames);
 
             AddBaseMethods(ret, specialNames);
 
@@ -293,7 +315,7 @@ namespace IronPython.Runtime.Types {
 
             Dictionary<string, string[]> specialNames = ImplementType();
 
-            Type ret = FinishType();
+            Type ret = FinishType(specialNames);
 
             AddBaseMethods(ret, specialNames);
 
@@ -334,6 +356,20 @@ namespace IronPython.Runtime.Types {
             }
 
             return specialNames;
+        }
+
+        private void AddCacheInfo(Dictionary<string, string[]> specialNames) {
+            var packedNames = PythonCachedTypeAttribute.PackSpecialNames(specialNames);
+            var interfaceTypes = PythonCachedTypeAttribute.PackInterfaceTypes(this._interfaceTypes);
+
+            var con = typeof(PythonCachedTypeAttribute).GetConstructor(new[] { typeof(string), typeof(string) });
+
+            _tg.SetCustomAttribute(
+                new CustomAttributeBuilder(
+                    con,
+                    new object[] { packedNames, interfaceTypes }
+                )
+            );
         }
 
         private void DefineInterfaces() {
@@ -1420,15 +1456,17 @@ namespace IronPython.Runtime.Types {
 
             Dictionary<string, string[]> specialNames = ImplementType();
 
-            Type ret = FinishType();
+            Type ret = FinishType(specialNames);
 
             return new KeyValuePair<Type, Dictionary<string, string[]>>(ret, specialNames);
         }
 
-        private Type FinishType() {
+        private Type FinishType(Dictionary<string, string[]> specialNames) {
             if (_cctor != null) {
                 _cctor.Emit(OpCodes.Ret);
             }
+            
+            AddCacheInfo(specialNames);
 
             return _tg.CreateType();
         }
@@ -1874,5 +1912,40 @@ namespace IronPython.Runtime.Types {
 
         #endregion
 
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class PythonCachedTypeAttribute : Attribute {
+        public string SpecialNames { get; set; }
+        public string InterfaceTypes { get; set; }
+
+        public PythonCachedTypeAttribute(string specialNames, string interfaceTypes) {
+            this.SpecialNames = specialNames;
+            this.InterfaceTypes = interfaceTypes;
+        }
+
+        internal Dictionary<string, string[]> CrackSpecialNames() {
+            return SpecialNames.Split(';').Select(s => {
+                var sp = s.Split(':');
+                return new {
+                    Key = sp[0],
+                    Value = sp[1].Split(',')
+                };
+            }).ToDictionary(i => i.Key, i => i.Value);
+        }
+
+        internal Type[] CrackInterfaceTypes() {
+            return !string.IsNullOrEmpty(InterfaceTypes) ?
+                InterfaceTypes.Split(';').Select(name => Type.GetType(name)).ToArray() :
+                Type.EmptyTypes;
+        }
+
+        internal static string PackSpecialNames(Dictionary<string, string[]> names) {
+            return string.Join(";", names.Select(i => string.Format("{0}:{1}", i.Key, string.Join(",", i.Value))).ToArray());
+        }
+
+        internal static string PackInterfaceTypes(IList<Type> types) {
+            return string.Join(";", types.Select(t => t.AssemblyQualifiedName).ToArray());
+        }
     }
 }
