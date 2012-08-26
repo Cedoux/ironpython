@@ -1948,4 +1948,24 @@ namespace IronPython.Runtime.Types {
             return string.Join(";", types.Select(t => t.AssemblyQualifiedName).ToArray());
         }
     }
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    public sealed class PythonClrTypeAttribute : Attribute {
+        readonly string moduleName;
+        readonly string className;
+
+        // This is a positional argument
+        public PythonClrTypeAttribute(string moduleName, string className) {
+            this.moduleName = moduleName;
+            this.className = className;
+        }
+
+        public string ClassName {
+            get { return className; }
+        }
+
+        public string ModuleName {
+            get { return moduleName; }
+        }
+    }
 }

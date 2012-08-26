@@ -28,7 +28,7 @@ from System.Runtime.InteropServices import DllImportAttribute, CallingConvention
 from Microsoft.Scripting.Generation import Snippets
 from Microsoft.Scripting.Runtime import DynamicOperations
 from IronPython.Runtime import NameType, PythonContext
-from IronPython.Runtime.Types import PythonType, ReflectedField, ReflectedProperty
+from IronPython.Runtime.Types import PythonType, ReflectedField, ReflectedProperty, PythonClrTypeAttribute
 
 def validate_clr_types(signature_types, var_signature = False):
     if not isinstance(signature_types, tuple):
@@ -168,7 +168,12 @@ class ClrType(type):
         else:
             return self.__name__
 
+    def emit_marker_attribute(self, typebld):
+        ctor = clr.GetClrType(PythonClrTypeAttribute).GetConstructor(System.Array[System.Type]([str, str]))
+        typebld.SetCustomAttribute(CustomAttributeBuilder(ctor, System.Array[object]([self.__module__, self.__name__])))
+
     def create_type(self, typebld):
+        self.emit_marker_attribute(typebld)
         self.emit_members(typebld)	
         new_type = typebld.CreateType()        
         self.map_members(new_type)        
