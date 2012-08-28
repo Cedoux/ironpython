@@ -526,7 +526,18 @@ class ClrClass(ClrInterface):
         self.set_python_type_field(new_type)
         super(ClrClass, self).map_members(new_type)
 
-    def __clrtype__(self):        
+    def find_existing_type(self):
+        assemblies = System.AppDomain.CurrentDomain.GetAssemblies()
+        for assembly in assemblies:
+            types = assembly.GetTypes()
+            for t in types:
+                attribs = t.GetCustomAttributes(PythonClrTypeAttribute, False)
+                if len(attribs) == 1:
+                    cls_info = attribs[0]
+                    if cls_info.ModuleName == self.__module__ and cls_info.ClassName == self.__name__:
+                        return t
+
+    def __clrtype__(self):
         # CDerived below will use ClrClass as its metaclass, but the user may not expect CDerived
         # to be a typed .NET class in this case:
         #
@@ -535,6 +546,14 @@ class ClrClass(ClrInterface):
         #   class CDerived(CBase): pass
         if not "__metaclass__" in self.__dict__:
             return super(ClrClass, self).__clrtype__()
+
+        existing_type = self.find_existing_type()
+        if existing_type is not None:
+            # TODO init existing type
+            self.map_members(existing_type)
+            return existing_type
+        else:
+            clr_type_name = self.get_clr_type_name()
 
         # Create a simple Python type first. 
         self.baseType = super(ClrType, self).__clrtype__()

@@ -6,9 +6,7 @@ class Foo(object):
     bar = 1
     
     def __init__(self):
-        import clr
-        import System
-        System.Diagnostics.Debugger.Break()
+        pass
     
     @clrtype.accepts()
     @clrtype.returns(object)
