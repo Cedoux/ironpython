@@ -68,6 +68,14 @@ namespace Microsoft.Scripting.Generation {
                 GetOrCreateAssembly(emitSymbols, ref _assembly);
         }
 
+        public void SetAssembly(bool emitSymbols, AssemblyGen assembly) {
+            if (emitSymbols) {
+                this._debugAssembly = assembly;
+            } else {
+                this._assembly = assembly;
+            }
+        }
+
         private AssemblyGen GetOrCreateAssembly(bool emitSymbols, ref AssemblyGen assembly) {
             if (assembly == null) {
                 string suffix = (emitSymbols) ? ".debug" : "";

@@ -32,41 +32,6 @@ using System.Reflection;
 namespace IronPython.Runtime {
     public static partial class ClrModule {
 
-        internal static AssemblyGen compiledAssembly = Snippets.Shared.GetAssembly(false);
-        internal static ScriptEngine embeddedEngine;
-
-        public class ClrClass : PythonType {
-            public ClrClass(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
-                : base(context, name, bases, dict) {
-            }
-
-            public override Type __clrtype__(CodeContext context) {
-                var pythonBase = NewTypeMaker.GetNewType(compiledAssembly, this.Name, new PythonTuple(this.BaseTypes));
-                var builder = compiledAssembly.DefinePublicType(this.Name, pythonBase, true);
-
-                var dict = this.GetMemberDictionary(context);
-                foreach(var item in dict) {
-                    var name = (string)item.Key;
-
-                    var method = builder.DefineMethod(name,
-                            MethodAttributes.Public,
-                            typeof(object),
-                            new[] { typeof(object) }
-                    );
-
-
-                }
-
-                return pythonBase;
-            }
-
-            private void emitMethod(TypeBuilder tb) {
-                var invokeMember = embeddedEngine.Operations.GetType().GetMethod("InvokeMember");
-
-
-            }
-        }
-
 #if FEATURE_FILESYSTEM
         /// <summary>
         /// Provides a helper for compiling a group of modules into a single assembly.  The assembly can later be
@@ -75,6 +40,19 @@ namespace IronPython.Runtime {
         public static void CompileModules(CodeContext/*!*/ context, string/*!*/ assemblyName, [ParamDictionary]IDictionary<string, object> kwArgs, params string/*!*/[]/*!*/ filenames) {
             ContractUtils.RequiresNotNull(assemblyName, "assemblyName");
             ContractUtils.RequiresNotNullItems(filenames, "filenames");
+
+            // break the assemblyName into it's dir/name/extension
+            string dir = Path.GetDirectoryName(assemblyName);
+            if (String.IsNullOrEmpty(dir)) {
+                dir = Environment.CurrentDirectory;
+            }
+
+            string name = Path.GetFileNameWithoutExtension(assemblyName);
+            string ext = Path.GetExtension(assemblyName);
+
+            var targetAssembly = new AssemblyGen(new AssemblyName(name), dir, ext, /*emitSymbols*/false);
+            AssemblyGen oldSnippetsAssembly = Snippets.Shared.GetAssembly(false);
+            Snippets.Shared.SetAssembly(false, targetAssembly);
 
             PythonContext pc = PythonContext.GetContext(context);
 
@@ -145,7 +123,10 @@ namespace IronPython.Runtime {
                 }
             }
 
-            SavableScriptCode.SaveToAssembly(assemblyName, code.ToArray());
+            SavableScriptCode.GenerateAssemblyCode(targetAssembly, code.ToArray());
+            targetAssembly.SaveAssembly();
+
+            Snippets.Shared.SetAssembly(false, oldSnippetsAssembly);
         }
 #endif
 

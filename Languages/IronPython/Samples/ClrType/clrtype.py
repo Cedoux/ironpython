@@ -316,8 +316,7 @@ class ClrClass(ClrInterface):
         typegen = Snippets.Shared.DefineType(
             "DynamicOperationsHolder" + str(hash(python_context)), 
             object, 
-            True, 
-            False)
+            True, False)
         typebld = typegen.TypeBuilder
         typebld.DefineField(
             "DynamicOperations",
@@ -556,10 +555,10 @@ class ClrClass(ClrInterface):
             clr_type_name = self.get_clr_type_name()
 
         # Create a simple Python type first. 
-        self.baseType = super(ClrType, self).__clrtype__()
+            self.baseType = super(ClrType, self).__clrtype__()
         # We will now subtype it to create a customized class with the 
         # CLR attributes as defined by the user
-        typegen = Snippets.Shared.DefineType(self.get_clr_type_name(), self.baseType, True, False)
+            typegen = Snippets.Shared.DefineType(clr_type_name, self.baseType, True, False)
         typebld = typegen.TypeBuilder
         return self.create_type(typebld)
 
