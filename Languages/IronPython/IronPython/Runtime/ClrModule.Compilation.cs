@@ -58,7 +58,14 @@ namespace IronPython.Runtime {
                 // TODO see if one is already loaded before creating a new one
                 var clrType = CreateClrClass(baseType, ns, funcs);
 
+                InitializeClrType(clrType);
+
                 return clrType;
+            }
+
+            private void InitializeClrType(Type clrType) {
+                var pythonTypeField = clrType.GetField("__pythonType");
+                pythonTypeField.SetValue(null, this);
             }
 
             private IEnumerable<ClrMethodInfo> GetTypedFunctions(PythonDictionary dict) {
@@ -80,10 +87,34 @@ namespace IronPython.Runtime {
 
             private Type CreateClrClass(Type baseType, string ns, IEnumerable<ClrMethodInfo> methods) {
                 var fullName = !string.IsNullOrEmpty(ns) ? ns + "." + Name : Name;
-                var tb = Snippets.Shared.DefinePublicType(fullName, baseType);
+                var tg = Snippets.Shared.DefineType(fullName, baseType, true, false);
+                var tb = tg.TypeBuilder;
+
+                var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
 
                 // TODO Default Constructor
-                // TODO Other constructors
+                foreach (var ctor in baseType.GetConstructors()) {
+                    var ctorParams = ctor.GetParameters();
+
+                    // if the first argument is PythonType, don't add it to this one
+                    if (ctorParams[0].ParameterType == typeof(PythonType)) {
+                        ctorParams = ctorParams.Skip(1).ToArray();
+                    }
+
+                    var newCtor = tb.DefineConstructor(
+                            ctor.Attributes,
+                            ctor.CallingConvention,
+                            ctorParams.Select(p => p.ParameterType).ToArray());
+                    var newCtorIL = newCtor.GetILGenerator();
+                    newCtorIL.Emit(OpCodes.Ldarg, 0);
+                    newCtorIL.Emit(OpCodes.Ldsfld, pythonTypeField);
+                    for (int i = 0; i < ctorParams.Length; ++i) {
+                        newCtorIL.Emit(OpCodes.Ldarg, i + 1);
+
+                    }
+                    newCtorIL.Emit(OpCodes.Call, ctor);
+                    newCtorIL.Emit(OpCodes.Ret);
+                }
 
                 foreach(var method in methods) {
                     DefineMethod(tb, method);
