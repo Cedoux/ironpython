@@ -35,29 +35,33 @@ using System.Runtime.InteropServices;
 namespace IronPython.Runtime {
     public static partial class ClrModule {
         internal class ClrMethodInfo {
-            internal string Name { get; set; }
+            internal PythonFunction Func { get; set; }
             internal Type ReturnType { get; set; }
             internal Type[] ArgTypes { get; set; }
         }
 
         public class ClrClass : PythonType {
-            private CodeContext context;
-
             public ClrClass(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
-                this.context = context;
+                // Can do nothing here b/c __clrtype__ is called from PythonType()
             }
             
             public override Type __clrtype__() {
                 var baseType = base.__clrtype__();
+                var dict = this.GetMemberDictionary(DefaultContext.Default);
 
-                var funcs = GetTypedFunctions().ToList();
+                object nso;
+                string ns = dict.TryGetValue("__clr_namespace__", out nso) ? (string)nso : string.Empty;
 
-                return baseType;
+                var funcs = GetTypedFunctions(dict).ToList();
+
+                // TODO see if one is already loaded before creating a new one
+                var clrType = CreateClrClass(baseType, ns, funcs);
+
+                return clrType;
             }
 
-            private IEnumerable<ClrMethodInfo> GetTypedFunctions() {
-                var dict = this.GetMemberDictionary(context);
+            private IEnumerable<ClrMethodInfo> GetTypedFunctions(PythonDictionary dict) {
                 foreach (var key in dict.Keys) {
                     var func = dict[key] as PythonFunction;
                     if (func != null) {
@@ -67,10 +71,31 @@ namespace IronPython.Runtime {
                             if(clr_method_info == null)
                                 throw new Exception();
 
+                            clr_method_info.Func = func;
                             yield return clr_method_info;
                         }
                     }
                 }
+            }
+
+            private Type CreateClrClass(Type baseType, string ns, IEnumerable<ClrMethodInfo> methods) {
+                var fullName = !string.IsNullOrEmpty(ns) ? ns + "." + Name : Name;
+                var tb = Snippets.Shared.DefinePublicType(fullName, baseType);
+
+                // TODO Default Constructor
+                // TODO Other constructors
+
+                foreach(var method in methods) {
+                    DefineMethod(tb, method);
+                }
+
+                // TODO Fields
+                // TODO Properties
+
+                return tb.CreateType();
+            }
+
+            private void DefineMethod(TypeBuilder tb, ClrMethodInfo method) {
             }
         }
 
@@ -98,7 +123,7 @@ namespace IronPython.Runtime {
                 }
 
                 func.__dict__["_clr_method_info"] = new ClrMethodInfo {
-                    Name = func.__name__,
+                    Func = func,
                     ReturnType = clr_return_type,
                     ArgTypes = clr_arg_types
                 };
