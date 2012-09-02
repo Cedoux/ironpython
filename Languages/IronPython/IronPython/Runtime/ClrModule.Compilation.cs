@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Microsoft.Scripting;
 using Microsoft.Scripting.Utils;
@@ -28,9 +29,97 @@ using Microsoft.Scripting.Generation;
 using System.Reflection.Emit;
 using Microsoft.Scripting.Hosting;
 using System.Reflection;
+using System.Collections;
+using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
     public static partial class ClrModule {
+        internal class ClrMethodInfo {
+            internal string Name { get; set; }
+            internal Type ReturnType { get; set; }
+            internal Type[] ArgTypes { get; set; }
+        }
+
+        public class ClrClass : PythonType {
+            private CodeContext context;
+
+            public ClrClass(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
+                : base(context, name, bases, dict) {
+                this.context = context;
+            }
+            
+            public override Type __clrtype__() {
+                var baseType = base.__clrtype__();
+
+                var funcs = GetTypedFunctions().ToList();
+
+                return baseType;
+            }
+
+            private IEnumerable<ClrMethodInfo> GetTypedFunctions() {
+                var dict = this.GetMemberDictionary(context);
+                foreach (var key in dict.Keys) {
+                    var func = dict[key] as PythonFunction;
+                    if (func != null) {
+                        object clr_method_info_obj;
+                        if(func.__dict__.TryGetValue("_clr_method_info", out clr_method_info_obj)) {
+                            var clr_method_info = clr_method_info_obj as ClrMethodInfo;
+                            if(clr_method_info == null)
+                                throw new Exception();
+
+                            yield return clr_method_info;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Decorate a Python method with CLR type information.
+        /// 
+        /// Use this in conjuction with __metaclass__ = Clr.ClrClass to create
+        /// real .NET types from Python types.
+        /// </summary>
+        /// <param name="return_type">The return type.</param>
+        /// <param name="arg_types">The argument types, in order.</param>
+        /// <returns></returns>
+        public static Func<PythonFunction, PythonFunction> method(
+                [DefaultParameterValue(null)]object return_type, 
+                [DefaultParameterValue(null)]IEnumerable<object> arg_types) {
+            return func => {
+                Type clr_return_type = ConvertPythonTypeToClr(return_type ?? typeof(void));
+                Type[] clr_arg_types;
+                if (arg_types != null) {
+                    clr_arg_types = arg_types
+                                        .Select(type => ConvertPythonTypeToClr(type))
+                                        .ToArray();
+                } else {
+                    clr_arg_types = Enumerable.Repeat(typeof(object), func.NormalArgumentCount).ToArray();
+                }
+
+                func.__dict__["_clr_method_info"] = new ClrMethodInfo {
+                    Name = func.__name__,
+                    ReturnType = clr_return_type,
+                    ArgTypes = clr_arg_types
+                };
+
+                return func;
+            };
+        }
+
+        private static Type ConvertPythonTypeToClr(object type) {
+            Type clr_type;
+            if (type is Type) {
+                clr_type = (Type)type;
+            }
+            if (type is PythonType) {
+                clr_type = ((PythonType)type).FinalSystemType;
+            } else {
+                clr_type = typeof(void);
+            }
+
+            return clr_type;
+        }
 
 #if FEATURE_FILESYSTEM
         /// <summary>
