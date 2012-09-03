@@ -40,7 +40,32 @@ namespace IronPython.Runtime {
             internal Type[] ArgTypes { get; set; }
         }
 
+        /// <summary>
+        /// Create a CLS-compliant version of a Python class, for use directly from
+        /// other .NET langauges.
+        /// 
+        /// To use, simply set the metaclass to clr.ClrClass, like so:
+        ///     class Foo(object):
+        ///         __metaclass__ clr.ClrClass
+        /// </summary>
         public class ClrClass : PythonType {
+            internal static Dictionary<string, Type> preLoadedClrTypes = new Dictionary<string, Type>();
+
+            internal static void LoadExistingClrTypes(Assembly asm) {
+                foreach (var t in asm.GetTypes()) {
+                    var attrib = t.GetCustomAttributes(
+                        typeof(PythonClrTypeAttribute), 
+                        false).SingleOrDefault() as PythonClrTypeAttribute;
+                    
+                    if (attrib != null) {
+                        var key = attrib.ModuleName + "." + attrib.ClassName;
+                        lock (preLoadedClrTypes) {
+                            preLoadedClrTypes[key] = t;
+                        }
+                    }
+                }
+            }
+
             public ClrClass(CodeContext/*!*/ context, string name, PythonTuple bases, PythonDictionary dict)
                 : base(context, name, bases, dict) {
                 // Can do nothing here b/c __clrtype__ is called from PythonType()
@@ -55,12 +80,22 @@ namespace IronPython.Runtime {
 
                 var funcs = GetTypedFunctions(dict).ToList();
 
-                // TODO see if one is already loaded before creating a new one
-                var clrType = CreateClrClass(baseType, ns, funcs);
+                var clrType = LoadClrClass() ?? CreateClrClass(baseType, ns, funcs);
 
                 InitializeClrType(clrType);
 
                 return clrType;
+            }
+
+            private Type LoadClrClass() {
+                string module = (string)PythonType.Get__module__(DefaultContext.Default, this);
+                string className = this.Name;
+                string key = module + "." + className;
+
+                lock(preLoadedClrTypes) {
+                    Type clrType;
+                    return preLoadedClrTypes.TryGetValue(key, out clrType) ? clrType : null;
+                }
             }
 
             private void InitializeClrType(Type clrType) {
@@ -90,9 +125,14 @@ namespace IronPython.Runtime {
                 var tg = Snippets.Shared.DefineType(fullName, baseType, true, false);
                 var tb = tg.TypeBuilder;
 
+                string module = (string)PythonType.Get__module__(DefaultContext.Default, this);
+                string className = this.Name;
+
+                var markerAttrCtor = typeof(PythonClrTypeAttribute).GetConstructors().Single();
+                tb.SetCustomAttribute(new CustomAttributeBuilder(markerAttrCtor, new[] { module, className }));
+
                 var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
 
-                // TODO Default Constructor
                 foreach (var ctor in baseType.GetConstructors()) {
                     var ctorParams = ctor.GetParameters();
 
@@ -133,7 +173,7 @@ namespace IronPython.Runtime {
         /// <summary>
         /// Decorate a Python method with CLR type information.
         /// 
-        /// Use this in conjuction with __metaclass__ = Clr.ClrClass to create
+        /// Use this in conjuction with __metaclass__ = clr.ClrClass to create
         /// real .NET types from Python types.
         /// </summary>
         /// <param name="return_type">The return type.</param>

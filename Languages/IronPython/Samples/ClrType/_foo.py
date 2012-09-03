@@ -25,3 +25,13 @@ class Foo(object, IDisposable):
 
 class MyList(System.Collections.ArrayList):
     __metaclass__ = clr.ClrClass
+
+clr.AddReference("System.Web")
+from System.Web import IHttpHandler
+class MyHandler(IHttpHandler):
+    __metaclass__ = clr.ClrClass
+
+    IsReusable = True
+    
+    def ProcessRequest(self, context):
+        context.Response.Write('Hello, World!')
