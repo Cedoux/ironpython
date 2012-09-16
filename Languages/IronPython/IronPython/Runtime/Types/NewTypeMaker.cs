@@ -1936,8 +1936,16 @@ namespace IronPython.Runtime.Types {
 
         internal Type[] CrackInterfaceTypes() {
             return !string.IsNullOrEmpty(InterfaceTypes) ?
-                InterfaceTypes.Split(';').Select(name => Type.GetType(name)).ToArray() :
+                InterfaceTypes.Split(';').Select(name => LoadType(name)).ToArray() :
                 Type.EmptyTypes;
+        }
+
+        private static Type LoadType(string name) {
+            var result = name.Split(new[] { ',' });
+            string type = result[0].Trim(), assemblyName = result[1].Trim();
+
+            var assembly = Assembly.LoadWithPartialName(assemblyName);
+            return assembly.GetType(type);
         }
 
         internal static string PackSpecialNames(Dictionary<string, string[]> names) {
@@ -1945,7 +1953,8 @@ namespace IronPython.Runtime.Types {
         }
 
         internal static string PackInterfaceTypes(IList<Type> types) {
-            return string.Join(";", types.Select(t => t.AssemblyQualifiedName).ToArray());
+            return string.Join(";", 
+                types.Select(t => string.Format("{0}, {1}", t.FullName, t.Assembly.GetName().Name)).ToArray());
         }
     }
 
