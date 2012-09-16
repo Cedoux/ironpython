@@ -1,5 +1,4 @@
 import clr
-import clrtype
 
 import System
 from System import IDisposable
@@ -12,14 +11,11 @@ class Foo(object, IDisposable):
     def __init__(self):
         pass
     
-    #@clrtype.accepts(System.Object, str, System.String)
-    #@clrtype.returns(object)
     @clr.method(object, (object, str, str))
     def frob(self, a, b, c):
         return 42
     
-    @clrtype.accepts()
-    @clrtype.returns()
+    @clr.method()
     def Dispose():
         pass
 
