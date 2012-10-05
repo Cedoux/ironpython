@@ -41,21 +41,11 @@ using System.Security;
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("1bbee69c-30c5-41df-8912-b81da6d658c2")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-#if !CLR2 && !SILVERLIGHT && !WIN8 && !ANDROID && !WP75
-[assembly: System.Security.SecurityRules(SecurityRuleSet.Level1)]
-#endif
 
 #if !WIN8
 [assembly: SecurityTransparent]
+[assembly: AllowPartiallyTrustedCallers]
+[assembly: SecurityRules(SecurityRuleSet.Level1)]
 #endif
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -68,7 +58,6 @@ using System.Security;
 #endif
 
 #if !SILVERLIGHT && !WP75 && !WIN8
-[assembly: AllowPartiallyTrustedCallers]
 [assembly: TypeForwardedTo(typeof(Microsoft.Scripting.Runtime.DynamicStackFrame))]
 #endif
 
