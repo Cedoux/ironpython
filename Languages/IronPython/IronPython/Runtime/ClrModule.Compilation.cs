@@ -40,6 +40,20 @@ namespace IronPython.Runtime {
             internal Type[] ArgTypes { get; set; }
         }
 
+        public class ClrAttributeInfo {
+            internal Type Type { get; set; }
+            internal object[] Args { get; set; }
+            internal IDictionary<string, object> KeywordArgs { get; set; }
+        }
+
+        public static ClrAttributeInfo wrap_attribute(Type attrib, [ParamDictionary]IDictionary<string, object> kwargs, params object[] args) {
+            return new ClrAttributeInfo {
+                Type = attrib,
+                Args = args,
+                KeywordArgs = kwargs
+            };
+        }
+
         /// <summary>
         /// Create a CLS-compliant version of a Python class, for use directly from
         /// other .NET langauges.
@@ -78,9 +92,14 @@ namespace IronPython.Runtime {
                 object nso;
                 string ns = dict.TryGetValue("__clr_namespace__", out nso) ? (string)nso : string.Empty;
 
+                object attribs_obj;
+                var attribs = dict.TryGetValue("__clr_attributes__", out attribs_obj) ?
+                    (IList<object>)attribs_obj :
+                    new List<object>();
+                
                 var funcs = GetTypedFunctions(dict).ToList();
 
-                var clrType = LoadClrClass() ?? CreateClrClass(baseType, ns, funcs);
+                var clrType = LoadClrClass() ?? CreateClrClass(baseType, ns, attribs.Cast<ClrAttributeInfo>(), funcs);
 
                 InitializeClrType(clrType);
 
@@ -120,7 +139,10 @@ namespace IronPython.Runtime {
                 }
             }
 
-            private Type CreateClrClass(Type baseType, string ns, IEnumerable<ClrMethodInfo> methods) {
+            private Type CreateClrClass(Type baseType,
+                                        string ns,
+                                        IEnumerable<ClrAttributeInfo> attributes,
+                                        IEnumerable<ClrMethodInfo> methods) {
                 var fullName = !string.IsNullOrEmpty(ns) ? ns + "." + Name : Name;
                 var tg = Snippets.Shared.DefineType(fullName, baseType, true, false);
                 var tb = tg.TypeBuilder;
@@ -130,6 +152,11 @@ namespace IronPython.Runtime {
 
                 var markerAttrCtor = typeof(PythonClrTypeAttribute).GetConstructors().Single();
                 tb.SetCustomAttribute(new CustomAttributeBuilder(markerAttrCtor, new[] { module, className }));
+
+                // TODO Class Attributes
+                foreach(var attrib in attributes) {
+                    DefineAttribute(tb, attrib);
+                }
 
                 var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
 
@@ -163,10 +190,21 @@ namespace IronPython.Runtime {
                 // TODO Fields
                 // TODO Properties
 
+
+
                 return tb.CreateType();
             }
 
             private void DefineMethod(TypeBuilder tb, ClrMethodInfo method) {
+            }
+
+            private void DefineAttribute(TypeBuilder tb, ClrAttributeInfo attrib) {
+                ConstructorInfo ctor;
+                Type[] ctor_arg_types = attrib.Args.Select(a => a.GetType()).ToArray();
+                ctor = attrib.Type.GetConstructor(ctor_arg_types);
+
+                var cab = new CustomAttributeBuilder(ctor, attrib.Args);
+                tb.SetCustomAttribute(cab);
             }
         }
 
@@ -198,6 +236,15 @@ namespace IronPython.Runtime {
                     ReturnType = clr_return_type,
                     ArgTypes = clr_arg_types
                 };
+
+                return func;
+            };
+        }
+
+        public static Func<PythonFunction, PythonFunction> attributes(
+                IEnumerable<Attribute> attribs) {
+            return func => {
+                func.__dict__["__clr__attributes__"] = attribs;
 
                 return func;
             };

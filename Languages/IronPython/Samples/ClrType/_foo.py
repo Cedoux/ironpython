@@ -3,8 +3,12 @@ import clr
 import System
 from System import IDisposable
 
+_a = clr.wrap_attribute
+
 class Foo(object, IDisposable):
     __metaclass__ = clr.ClrClass
+    __clr_namespace__ = 'MyFoo'
+    __clr_attributes__ = [_a(System.ObsoleteAttribute), _a(System.CLSCompliantAttribute, true, IsCompliant=False)]
 
     bar = 1
     
