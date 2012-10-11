@@ -219,6 +219,7 @@ namespace IronPython.Runtime {
 
                 // TODO Construtors
                 // TODO Overrides
+                // TODO Static methods
 
                 var mb = tb.DefineMethod(
                     method.Func.__name__,
@@ -308,6 +309,15 @@ namespace IronPython.Runtime {
                 IEnumerable<ClrAttributeInfo> attribs) {
             return func => {
                 func.__dict__["__clr_attributes__"] = attribs;
+
+                return func;
+            };
+        }
+
+        public static Func<PythonFunction, PythonFunction> pinvoke(
+                string dllName) {
+            return func => {
+                func.__dict__["__clr_pinvoke__"] = new ClrPInvokeInfo { };
 
                 return func;
             };
