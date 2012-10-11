@@ -8,20 +8,12 @@ _a = clr.wrap_attribute
 class Foo(object, IDisposable):
     __metaclass__ = clr.ClrClass
     __clr_namespace__ = 'MyFoo'
-    __clr_attributes__ = [_a(System.ObsoleteAttribute), _a(System.CLSCompliantAttribute, true, IsCompliant=False)]
-
-    bar = 1
-    
-    def __init__(self):
-        pass
+    __clr_attributes__ = [_a(System.ObsoleteAttribute), _a(System.CLSCompliantAttribute, True, IsCompliant=False)]
     
     @clr.method(object, (object, str, str))
+    @clr.attributes([_a(System.ObsoleteAttribute)])
     def frob(self, a, b, c):
         return 42
-    
-    @clr.method()
-    def Dispose():
-        pass
 
 class MyList(System.Collections.ArrayList):
     __metaclass__ = clr.ClrClass

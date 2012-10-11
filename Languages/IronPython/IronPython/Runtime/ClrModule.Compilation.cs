@@ -46,6 +46,10 @@ namespace IronPython.Runtime {
             internal IDictionary<string, object> KeywordArgs { get; set; }
         }
 
+        public class ClrPInvokeInfo {
+
+        }
+
         public static ClrAttributeInfo wrap_attribute(Type attrib, [ParamDictionary]IDictionary<string, object> kwargs, params object[] args) {
             return new ClrAttributeInfo {
                 Type = attrib,
@@ -153,7 +157,6 @@ namespace IronPython.Runtime {
                 var markerAttrCtor = typeof(PythonClrTypeAttribute).GetConstructors().Single();
                 tb.SetCustomAttribute(new CustomAttributeBuilder(markerAttrCtor, new[] { module, className }));
 
-                // TODO Class Attributes
                 foreach(var attrib in attributes) {
                     DefineAttribute(tb, attrib);
                 }
@@ -196,15 +199,75 @@ namespace IronPython.Runtime {
             }
 
             private void DefineMethod(TypeBuilder tb, ClrMethodInfo method) {
+                var invokeMember = typeof(DynamicOperations).GetMethod("InvokeMember", 
+                    new[] { typeof(object), typeof(string), typeof(object[]) });
+
+                // Type.GetMethod raises an AmbiguousMatchException if there is a generic 
+                // and a non-generic method (like DynamicOperations.GetMember) with the 
+                // same name and signature. So we have to do things the hard way.
+                var getMember = typeof(DynamicOperations).GetMethods()
+                    .Where(m => m.Name == "GetMember" && !m.IsGenericMethod && m.GetParameters().Length == 2)
+                    .First();
+                var setMember = typeof(DynamicOperations).GetMethods()
+                    .Where(m => m.Name == "SetMember" && !m.IsGenericMethod && m.GetParameters().Length == 3)
+                    .First();
+
+                var convertTo = typeof(DynamicOperations).GetMethod("ConvertTo",
+                    new[] { typeof(object), typeof(Type) });
+
+                var attributes = MethodAttributes.Public;
+
+                // TODO Construtors
+                // TODO Overrides
+
+                var mb = tb.DefineMethod(
+                    method.Func.__name__,
+                    attributes,
+                    method.ReturnType,
+                    method.ArgTypes
+                );
+
+                object attribs_obj;
+                var customAttribs = method.Func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
+                    (IEnumerable<ClrAttributeInfo>)attribs_obj :
+                    Enumerable.Empty<ClrAttributeInfo>();
+
+                foreach (var attrib in customAttribs) {
+                    DefineAttribute(mb, attrib);
+                }
+
+                var argNames = method.Func.ArgNames;
+                for(int i = 0; i < method.ArgTypes.Length; ++i) {
+                    mb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
+                }
+
+                var ilGen = mb.GetILGenerator();
+
+                // TODO Actual implementation to call Python method
+
+                if (method.ReturnType != typeof(void)) {
+                    ilGen.Emit(OpCodes.Ldnull);
+                }
+                ilGen.Emit(OpCodes.Ret);
             }
 
             private void DefineAttribute(TypeBuilder tb, ClrAttributeInfo attrib) {
+                tb.SetCustomAttribute(MakeCab(attrib));
+            }
+
+            private void DefineAttribute(MethodBuilder mb, ClrAttributeInfo attrib) {
+                mb.SetCustomAttribute(MakeCab(attrib));
+            }
+
+            private static CustomAttributeBuilder MakeCab(ClrAttributeInfo attrib)
+            {
                 ConstructorInfo ctor;
                 Type[] ctor_arg_types = attrib.Args.Select(a => a.GetType()).ToArray();
                 ctor = attrib.Type.GetConstructor(ctor_arg_types);
 
-                var cab = new CustomAttributeBuilder(ctor, attrib.Args);
-                tb.SetCustomAttribute(cab);
+                // TODO Handle keyword args
+
+                return new CustomAttributeBuilder(ctor, attrib.Args);
             }
         }
 
@@ -242,9 +305,9 @@ namespace IronPython.Runtime {
         }
 
         public static Func<PythonFunction, PythonFunction> attributes(
-                IEnumerable<Attribute> attribs) {
+                IEnumerable<ClrAttributeInfo> attribs) {
             return func => {
-                func.__dict__["__clr__attributes__"] = attribs;
+                func.__dict__["__clr_attributes__"] = attribs;
 
                 return func;
             };
