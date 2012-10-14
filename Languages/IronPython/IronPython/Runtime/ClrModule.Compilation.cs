@@ -19,18 +19,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 
 using Microsoft.Scripting;
+using Microsoft.Scripting.Generation;
+using Microsoft.Scripting.Runtime;
 using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
-using Microsoft.Scripting.Generation;
-using System.Reflection.Emit;
-using Microsoft.Scripting.Hosting;
-using System.Reflection;
-using System.Collections;
-using System.Runtime.InteropServices;
 
 namespace IronPython.Runtime {
     public static partial class ClrModule {
@@ -38,6 +37,7 @@ namespace IronPython.Runtime {
             internal PythonFunction Func { get; set; }
             internal Type ReturnType { get; set; }
             internal Type[] ArgTypes { get; set; }
+            internal bool IsStatic { get; set; }
         }
 
         public class ClrAttributeInfo {
@@ -90,6 +90,9 @@ namespace IronPython.Runtime {
             }
             
             public override Type __clrtype__() {
+                Type clrType = LoadClrClass();
+                if (clrType == null) {
+
                 var baseType = base.__clrtype__();
                 var dict = this.GetMemberDictionary(DefaultContext.Default);
 
@@ -100,10 +103,11 @@ namespace IronPython.Runtime {
                 var attribs = dict.TryGetValue("__clr_attributes__", out attribs_obj) ?
                     (IList<object>)attribs_obj :
                     new List<object>();
-                
+
                 var funcs = GetTypedFunctions(dict).ToList();
 
-                var clrType = LoadClrClass() ?? CreateClrClass(baseType, ns, attribs.Cast<ClrAttributeInfo>(), funcs);
+                    clrType = CreateClrClass(baseType, ns, attribs.Cast<ClrAttributeInfo>(), funcs);
+                }
 
                 InitializeClrType(clrType);
 
@@ -127,9 +131,18 @@ namespace IronPython.Runtime {
             }
 
             private IEnumerable<ClrMethodInfo> GetTypedFunctions(PythonDictionary dict) {
-                foreach (var key in dict.Keys) {
-                    var func = dict[key] as PythonFunction;
-                    if (func != null) {
+                foreach (var value in dict.Values) {
+                    bool isStatic = false;
+                    PythonFunction func = value as PythonFunction;
+                    if(func == null) {
+                        if(value is staticmethod) {
+                            func = (PythonFunction)((staticmethod)value).__func__;
+                            isStatic = true;
+                        } else {
+                            continue;
+                        }
+                    }
+
                         object clr_method_info_obj;
                         if(func.__dict__.TryGetValue("_clr_method_info", out clr_method_info_obj)) {
                             var clr_method_info = clr_method_info_obj as ClrMethodInfo;
@@ -137,11 +150,11 @@ namespace IronPython.Runtime {
                                 throw new Exception();
 
                             clr_method_info.Func = func;
+                        clr_method_info.IsStatic = isStatic;
                             yield return clr_method_info;
                         }
                     }
                 }
-            }
 
             private Type CreateClrClass(Type baseType,
                                         string ns,
@@ -163,8 +176,9 @@ namespace IronPython.Runtime {
 
                 var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
 
-                foreach (var ctor in baseType.GetConstructors()) {
-                    var ctorParams = ctor.GetParameters();
+                ConstructorInfo defCtor = null;
+                foreach (var baseCtor in baseType.GetConstructors()) {
+                    var ctorParams = baseCtor.GetParameters();
 
                     // if the first argument is PythonType, don't add it to this one
                     if (ctorParams[0].ParameterType == typeof(PythonType)) {
@@ -172,30 +186,61 @@ namespace IronPython.Runtime {
                     }
 
                     var newCtor = tb.DefineConstructor(
-                            ctor.Attributes,
-                            ctor.CallingConvention,
+                            baseCtor.Attributes,
+                            baseCtor.CallingConvention,
                             ctorParams.Select(p => p.ParameterType).ToArray());
-                    var newCtorIL = newCtor.GetILGenerator();
-                    newCtorIL.Emit(OpCodes.Ldarg, 0);
-                    newCtorIL.Emit(OpCodes.Ldsfld, pythonTypeField);
-                    for (int i = 0; i < ctorParams.Length; ++i) {
-                        newCtorIL.Emit(OpCodes.Ldarg, i + 1);
+                    var newCtorIL = new ILGen(newCtor.GetILGenerator());
+                    newCtorIL.EmitLoadArg(0);
+                    newCtorIL.EmitType(tb);
+                    newCtorIL.EmitFieldAddress(pythonTypeField);
+                    newCtorIL.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                    for (int i = 1; i <= ctorParams.Length; ++i) {
+                        newCtorIL.Emit(OpCodes.Ldarg, i);
 
                     }
-                    newCtorIL.Emit(OpCodes.Call, ctor);
+                    newCtorIL.Emit(OpCodes.Call, baseCtor);
                     newCtorIL.Emit(OpCodes.Ret);
+
+                    if (ctorParams.Length == 0) {
+                        defCtor = newCtor;
+                }
                 }
 
                 foreach(var method in methods) {
+                    if (method.Func.__name__ == "__new__") {
+                        DefineConstructor(tb, method, defCtor);
+                    } else {
                     DefineMethod(tb, method);
+                }
                 }
 
                 // TODO Fields
                 // TODO Properties
 
-
-
                 return tb.CreateType();
+            }
+
+            private void DefineConstructor(TypeBuilder tb, ClrMethodInfo method, ConstructorInfo defCtor) {
+                var attributes = MethodAttributes.Public;
+
+                // TODO Overrides
+                // TODO Static methods
+
+                var cb = tb.DefineConstructor(
+                    attributes,
+                    CallingConventions.Standard,
+                    method.ArgTypes
+                );
+
+                var argNames = method.Func.ArgNames;
+                for(int i = 0; i < method.ArgTypes.Length; ++i) {
+                    cb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
+            }
+
+                var ilGen = new ILGen(cb.GetILGenerator());
+                ilGen.EmitLoadArg(0);
+                ilGen.Emit(OpCodes.Call, defCtor);
+                ilGen.Emit(OpCodes.Ret);
             }
 
             private void DefineMethod(TypeBuilder tb, ClrMethodInfo method) {
@@ -217,7 +262,6 @@ namespace IronPython.Runtime {
 
                 var attributes = MethodAttributes.Public;
 
-                // TODO Construtors
                 // TODO Overrides
                 // TODO Static methods
 
@@ -242,7 +286,7 @@ namespace IronPython.Runtime {
                     mb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
                 }
 
-                var ilGen = mb.GetILGenerator();
+                var ilGen = new ILGen(mb.GetILGenerator());
 
                 // TODO Actual implementation to call Python method
 

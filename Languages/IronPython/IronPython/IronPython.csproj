@@ -62,6 +62,7 @@
     <Compile Include="Runtime\BuiltinPythonModule.cs" />
     <Compile Include="Runtime\ClrModule.Compilation.cs" />
     <Compile Include="Runtime\ConstantDictionaryStorage.cs" />
+    <Compile Include="Runtime\DefaultEngine.cs" />
     <Compile Include="Runtime\DictionaryTypeInfoAttribute.cs" />
     <Compile Include="Modules\imp.cs" />
     <Compile Include="Runtime\DebuggerDictionaryStorage.cs" />
