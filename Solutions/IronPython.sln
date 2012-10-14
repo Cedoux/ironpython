@@ -62,6 +62,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.SQLite", "..\Languages\IronPython\IronPython.SQLite\IronPython.SQLite.csproj", "{4A617A40-2BA7-4713-AAFE-F90C4325C581}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonCompiler", "..\Languages\IronPython\IronPythonCompiler\IronPythonCompiler.csproj", "{2F84CA66-4FCB-40DD-903D-10BE663FAE39}"
+	ProjectSection(ProjectDependencies) = postProject
+		{811AC32C-11F3-4ED8-92A7-A7E39C2BB704} = {811AC32C-11F3-4ED8-92A7-A7E39C2BB704}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
