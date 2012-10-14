@@ -66,6 +66,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonCompiler", "..\La
 		{811AC32C-11F3-4ED8-92A7-A7E39C2BB704} = {811AC32C-11F3-4ED8-92A7-A7E39C2BB704}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.MSBuild", "..\Languages\IronPython\IronPython.MSBuild\IronPython.MSBuild.csproj", "{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2F84CA66-4FCB-40DD-903D-10BE663FAE39} = {2F84CA66-4FCB-40DD-903D-10BE663FAE39}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		AndroidDebug|Any CPU = AndroidDebug|Any CPU
@@ -583,6 +588,39 @@ Global
 		{2F84CA66-4FCB-40DD-903D-10BE663FAE39}.Win8Release|Any CPU.ActiveCfg = Win8Release|Any CPU
 		{2F84CA66-4FCB-40DD-903D-10BE663FAE39}.Win8Release|Any CPU.Build.0 = Win8Release|Any CPU
 		{2F84CA66-4FCB-40DD-903D-10BE663FAE39}.Win8Release|x86.ActiveCfg = Win8Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidDebug|Any CPU.Build.0 = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidDebug|x86.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidRelease|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.AndroidRelease|x86.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.FxCop|x86.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Release|x86.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Debug|x86.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Release|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Silverlight5Release|x86.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Debug|x86.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Release|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.v2Release|x86.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Debug|x86.ActiveCfg = Debug|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Release|Any CPU.Build.0 = Release|Any CPU
+		{23F2BA52-4578-4C1C-878A-9BC9BF7339A9}.Win8Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
