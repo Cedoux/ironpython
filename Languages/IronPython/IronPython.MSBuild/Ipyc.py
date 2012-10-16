@@ -1,7 +1,11 @@
 ﻿import clr
+clr.AddReference("Microsoft.Build.Framework")
 clr.AddReference("Microsoft.Build.Utilities.v4.0")
 
+from System.Diagnostics import Debugger
+
 from Microsoft.Build.Utilities import Task
+from Microsoft.Build.Framework import MessageImportance
 
 class Ipyc(Task):
     __metaclass__ = clr.ClrClass

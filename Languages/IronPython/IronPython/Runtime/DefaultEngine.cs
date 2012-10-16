@@ -42,6 +42,9 @@ namespace IronPython.Runtime {
             
             var engine = GetDefaultEngine();
 
+            // Add the type's assembly to make sure any pre-generated classes are picked up
+            engine.Runtime.LoadAssembly(t.Assembly);
+
             string moduleName, className;
             if (TryGetPythonTypeName(t, out moduleName, out className)) {
                 var moduleScope = engine.ImportModule(moduleName);
