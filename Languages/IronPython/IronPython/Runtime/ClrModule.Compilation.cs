@@ -40,6 +40,13 @@ namespace IronPython.Runtime {
             internal bool IsStatic { get; set; }
         }
 
+        internal class ClrPropertyInfo {
+            internal PythonProperty Property { get; set; }
+            internal string Name { get; set; }
+            internal Type Type { get; set; }
+            internal bool IsStatic { get; set; }
+        }
+
         public class ClrAttributeInfo {
             internal Type Type { get; set; }
             internal object[] Args { get; set; }
@@ -105,8 +112,9 @@ namespace IronPython.Runtime {
                     new List<object>();
 
                 var funcs = GetTypedFunctions(dict).ToList();
+                    var props = GetTypedProperties(dict).ToList();
 
-                    clrType = CreateClrClass(baseType, ns, attribs.Cast<ClrAttributeInfo>(), funcs);
+                    clrType = CreateClrClass(baseType, ns, attribs.Cast<ClrAttributeInfo>(), funcs, props);
                 }
 
                 InitializeClrType(clrType);
@@ -156,10 +164,45 @@ namespace IronPython.Runtime {
                     }
                 }
 
+            private IEnumerable<ClrPropertyInfo> GetTypedProperties(PythonDictionary dict) {
+                foreach (var value in dict.Values) {
+                    bool isStatic = false;
+                    PythonProperty prop = value as PythonProperty;
+                    if(prop == null) {
+                        continue;
+                    }
+
+                    PythonFunction func = prop.fget as PythonFunction;
+                    if(func == null) {
+                        if(value is staticmethod) {
+                            func = (PythonFunction)((staticmethod)value).__func__;
+                            isStatic = true;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    object clr_method_info_obj;
+                    if (func.__dict__.TryGetValue("_clr_method_info", out clr_method_info_obj)) {
+                        var clr_method_info = clr_method_info_obj as ClrMethodInfo;
+                        if(clr_method_info == null)
+                            throw new Exception();
+
+                        yield return new ClrPropertyInfo {
+                            Property = prop,
+                            Name = clr_method_info.Func.__name__,
+                            Type = clr_method_info.ReturnType,
+                            IsStatic = isStatic
+                        };
+                    }
+                }
+            }
+
             private Type CreateClrClass(Type baseType,
                                         string ns,
                                         IEnumerable<ClrAttributeInfo> attributes,
-                                        IEnumerable<ClrMethodInfo> methods) {
+                                        IEnumerable<ClrMethodInfo> methods,
+                                        IEnumerable<ClrPropertyInfo> properties) {
                 var fullName = !string.IsNullOrEmpty(ns) ? ns + "." + Name : Name;
                 var tg = Snippets.Shared.DefineType(fullName, baseType, true, false);
                 var tb = tg.TypeBuilder;
@@ -346,6 +389,15 @@ namespace IronPython.Runtime {
                 };
 
                 return func;
+            };
+        }
+
+        public static Func<PythonFunction, PythonProperty> property(Type propertyType) {
+            return func => {
+                var prop = new PythonProperty();
+                prop.__init__(method(propertyType, null)(func), null, null, null);
+
+                return prop;
             };
         }
 

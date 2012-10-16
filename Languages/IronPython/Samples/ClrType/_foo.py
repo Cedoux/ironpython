@@ -10,6 +10,15 @@ class Foo(object, IDisposable):
     __clr_namespace__ = 'MyFoo'
     __clr_attributes__ = [_a(System.ObsoleteAttribute), _a(System.CLSCompliantAttribute, True, IsCompliant=False)]
     
+    @property
+    @clr.method(int)
+    def bar(self):
+        return -1
+    
+    @bar.setter
+    def bar(self, value):
+        pass
+    
     @clr.method(None, (str,))
     def __new__(cls, name):
         return super(Foo, cls).__new__(cls)
@@ -19,8 +28,7 @@ class Foo(object, IDisposable):
     def frob(self, a, b, c):
         return 42
     
-    def bar(self):
-        return -1
+
 
 #~ class MyException(System.Exception):
     #~ def __new__(cls, *args):
