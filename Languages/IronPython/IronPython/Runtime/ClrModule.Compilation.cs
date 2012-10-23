@@ -30,21 +30,26 @@ using Microsoft.Scripting.Utils;
 
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
+using Microsoft.Scripting.Hosting;
 
 namespace IronPython.Runtime {
     public static partial class ClrModule {
         internal class ClrMethodInfo {
-            internal PythonFunction Func { get; set; }
+            internal string Name { get; set; }
             internal Type ReturnType { get; set; }
+            internal string[] ArgNames { get; set; }
             internal Type[] ArgTypes { get; set; }
             internal bool IsStatic { get; set; }
+            internal ClrAttributeInfo[] CustomAttributes { get; set; }
         }
 
         internal class ClrPropertyInfo {
-            internal PythonProperty Property { get; set; }
+            internal bool HasGetter { get; set; }
+            internal bool HasSetter { get; set; }
             internal string Name { get; set; }
             internal Type Type { get; set; }
             internal bool IsStatic { get; set; }
+            internal ClrAttributeInfo[] CustomAttributes { get; set; }
         }
 
         public class ClrAttributeInfo {
@@ -157,7 +162,7 @@ namespace IronPython.Runtime {
                             if(clr_method_info == null)
                                 throw new Exception();
 
-                            clr_method_info.Func = func;
+                        clr_method_info.Name = func.__name__;
                         clr_method_info.IsStatic = isStatic;
                             yield return clr_method_info;
                         }
@@ -189,9 +194,11 @@ namespace IronPython.Runtime {
                             throw new Exception();
 
                         yield return new ClrPropertyInfo {
-                            Property = prop,
-                            Name = clr_method_info.Func.__name__,
+                            HasGetter = prop.fget != null,
+                            HasSetter = prop.fset != null,
+                            Name = clr_method_info.Name,
                             Type = clr_method_info.ReturnType,
+                            CustomAttributes = clr_method_info.CustomAttributes,
                             IsStatic = isStatic
                         };
                     }
@@ -218,6 +225,7 @@ namespace IronPython.Runtime {
                 }
 
                 var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
+                var objectOpsField = tg.AddStaticField(typeof(ObjectOperations), "__operations");
 
                 ConstructorInfo defCtor = null;
                 foreach (var baseCtor in baseType.GetConstructors()) {
@@ -236,6 +244,7 @@ namespace IronPython.Runtime {
                     newCtorIL.EmitLoadArg(0);
                     newCtorIL.EmitType(tb);
                     newCtorIL.EmitFieldAddress(pythonTypeField);
+                    newCtorIL.EmitFieldAddress(objectOpsField);
                     newCtorIL.EmitCall(typeof(DefaultEngine), "LoadPythonType");
                     for (int i = 1; i <= ctorParams.Length; ++i) {
                         newCtorIL.Emit(OpCodes.Ldarg, i);
@@ -250,17 +259,86 @@ namespace IronPython.Runtime {
                 }
 
                 foreach(var method in methods) {
-                    if (method.Func.__name__ == "__new__") {
+                    if (method.Name == "__new__") {
                         DefineConstructor(tb, method, defCtor);
                     } else {
-                    DefineMethod(tb, method);
+                        DefineMethod(tb, method, objectOpsField);
                 }
                 }
 
                 // TODO Fields
-                // TODO Properties
+
+                foreach (var property in properties) {
+                    DefineProperty(tb, property, pythonTypeField, objectOpsField);
+                }
 
                 return tb.CreateType();
+            }
+
+            private void DefineProperty(TypeBuilder tb, ClrPropertyInfo property, FieldBuilder pythonTypeField, FieldBuilder objectOpsField) {
+                // Type.GetMethod raises an AmbiguousMatchException if there is a generic 
+                // and a non-generic method (like ObjectOperations.GetMember) with the 
+                // same name and signature. So we have to do things the hard way.
+                var getMember = typeof(ObjectOperations).GetMethods()
+                    .Where(m => m.Name == "GetMember" && !m.IsGenericMethod && m.GetParameters().Length == 2)
+                    .First();
+                var setMember = typeof(ObjectOperations).GetMethods()
+                    .Where(m => m.Name == "SetMember" && !m.IsGenericMethod && m.GetParameters().Length == 3)
+                    .First();
+
+                var pb = tb.DefineProperty(property.Name, PropertyAttributes.None, property.Type, null);
+
+                var attribs = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
+                if (property.HasGetter) {
+                    var getter = tb.DefineMethod("get_" + property.Name, attribs, property.Type, Type.EmptyTypes);
+                    var ilGen = new ILGen(getter.GetILGenerator());
+
+                    ilGen.EmitFieldGet(objectOpsField);
+                    if (property.IsStatic) {
+                        throw new Exception("static currently unsupported");
+                    } else {
+                        ilGen.EmitLoadArg(0); // load "this"
+                    }
+
+                    // Call ObjectOperations.GetMember
+                    ilGen.EmitString(property.Name);
+                    ilGen.EmitCall(getMember);
+
+                    var retVal = ilGen.DeclareLocal(typeof(object));
+                    ilGen.Emit(OpCodes.Stloc, retVal);  // store the result in retVal
+
+                    ilGen.EmitFieldGet(objectOpsField);
+                    ilGen.Emit(OpCodes.Ldloc, retVal);
+                    ilGen.EmitType(property.Type);
+                    ilGen.EmitCall(typeof(Type), "GetTypeFromHandle");
+                    ilGen.EmitCall(typeof(ObjectOperations), "ConvertTo", new[] { typeof(object), typeof(Type) });
+                    ilGen.EmitUnbox(property.Type);
+
+                    ilGen.Emit(OpCodes.Ret);
+
+                    pb.SetGetMethod(getter);
+                }
+
+                if (property.HasSetter) {
+                    var setter = tb.DefineMethod("set_" + property.Name, attribs, null, new[] { property.Type });
+                    var ilGen = new ILGen(setter.GetILGenerator());
+
+                    ilGen.EmitFieldGet(objectOpsField);
+                    if (property.IsStatic) {
+                        throw new Exception("static currently unsupported");
+                    } else {
+                        ilGen.EmitLoadArg(0); // load "this"
+                    }
+
+                    // Call ObjectOperations.SetMember
+                    ilGen.EmitString(property.Name);
+                    ilGen.EmitLoadArg(property.IsStatic ? 0 : 1);
+                    ilGen.EmitCall(setMember);
+
+                    ilGen.Emit(OpCodes.Ret);
+
+                    pb.SetSetMethod(setter);
+                }
             }
 
             private void DefineConstructor(TypeBuilder tb, ClrMethodInfo method, ConstructorInfo defCtor) {
@@ -275,7 +353,7 @@ namespace IronPython.Runtime {
                     method.ArgTypes
                 );
 
-                var argNames = method.Func.ArgNames;
+                var argNames = method.ArgNames;
                 for(int i = 0; i < method.ArgTypes.Length; ++i) {
                     cb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
             }
@@ -286,22 +364,19 @@ namespace IronPython.Runtime {
                 ilGen.Emit(OpCodes.Ret);
             }
 
-            private void DefineMethod(TypeBuilder tb, ClrMethodInfo method) {
-                var invokeMember = typeof(DynamicOperations).GetMethod("InvokeMember", 
+            private void DefineMethod(TypeBuilder tb, ClrMethodInfo method, FieldBuilder objectOpsField) {
+                var invokeMember = typeof(ObjectOperations).GetMethod("InvokeMember", 
                     new[] { typeof(object), typeof(string), typeof(object[]) });
 
                 // Type.GetMethod raises an AmbiguousMatchException if there is a generic 
-                // and a non-generic method (like DynamicOperations.GetMember) with the 
+                // and a non-generic method (like ObjectOperations.GetMember) with the 
                 // same name and signature. So we have to do things the hard way.
-                var getMember = typeof(DynamicOperations).GetMethods()
+                var getMember = typeof(ObjectOperations).GetMethods()
                     .Where(m => m.Name == "GetMember" && !m.IsGenericMethod && m.GetParameters().Length == 2)
                     .First();
-                var setMember = typeof(DynamicOperations).GetMethods()
+                var setMember = typeof(ObjectOperations).GetMethods()
                     .Where(m => m.Name == "SetMember" && !m.IsGenericMethod && m.GetParameters().Length == 3)
                     .First();
-
-                var convertTo = typeof(DynamicOperations).GetMethod("ConvertTo",
-                    new[] { typeof(object), typeof(Type) });
 
                 var attributes = MethodAttributes.Public;
 
@@ -309,22 +384,17 @@ namespace IronPython.Runtime {
                 // TODO Static methods
 
                 var mb = tb.DefineMethod(
-                    method.Func.__name__,
+                    method.Name,
                     attributes,
                     method.ReturnType,
                     method.ArgTypes
                 );
 
-                object attribs_obj;
-                var customAttribs = method.Func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
-                    (IEnumerable<ClrAttributeInfo>)attribs_obj :
-                    Enumerable.Empty<ClrAttributeInfo>();
-
-                foreach (var attrib in customAttribs) {
+                foreach (var attrib in method.CustomAttributes) {
                     DefineAttribute(mb, attrib);
                 }
 
-                var argNames = method.Func.ArgNames;
+                var argNames = method.ArgNames;
                 for(int i = 0; i < method.ArgTypes.Length; ++i) {
                     mb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
                 }
@@ -333,8 +403,37 @@ namespace IronPython.Runtime {
 
                 // TODO Actual implementation to call Python method
 
+                // Load all of the arguments into a local array
+                var args = ilGen.DeclareLocal(typeof(object[]));
+                ilGen.EmitArray(typeof(object), method.ArgTypes.Length, (i) => {
+                    ilGen.EmitLoadArg(method.IsStatic ? i : i+1);
+                });
+                ilGen.Emit(OpCodes.Stloc, args);
+
+                ilGen.EmitFieldGet(objectOpsField);
+                if (method.IsStatic) {
+                    throw new Exception("static currently unsupported");
+                } else {
+                    ilGen.EmitLoadArg(0); // load "this"
+                }
+
+                // Call ObjectOperations.InvokeMember
+                ilGen.EmitString(method.Name);
+                ilGen.Emit(OpCodes.Ldloc, args);
+                ilGen.EmitCall(invokeMember);
+
                 if (method.ReturnType != typeof(void)) {
-                    ilGen.Emit(OpCodes.Ldnull);
+                    var retVal = ilGen.DeclareLocal(typeof(object));
+                    ilGen.Emit(OpCodes.Stloc, retVal);  // store the result in retVal
+
+                    ilGen.EmitFieldGet(objectOpsField);
+                    ilGen.Emit(OpCodes.Ldloc, retVal);
+                    ilGen.EmitType(method.ReturnType);
+                    ilGen.EmitCall(typeof(Type), "GetTypeFromHandle");
+                    ilGen.EmitCall(typeof(ObjectOperations), "ConvertTo", new[] { typeof(object), typeof(Type) });
+                    ilGen.EmitUnbox(method.ReturnType);
+                } else {
+                    ilGen.Emit(OpCodes.Pop);
                 }
                 ilGen.Emit(OpCodes.Ret);
             }
@@ -382,10 +481,17 @@ namespace IronPython.Runtime {
                     clr_arg_types = Enumerable.Repeat(typeof(object), func.NormalArgumentCount).ToArray();
                 }
 
+                object attribs_obj;
+                var customAttribs = func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
+                    (IEnumerable<ClrAttributeInfo>)attribs_obj :
+                    Enumerable.Empty<ClrAttributeInfo>();
+
                 func.__dict__["_clr_method_info"] = new ClrMethodInfo {
-                    Func = func,
+                    Name = func.__name__,
                     ReturnType = clr_return_type,
-                    ArgTypes = clr_arg_types
+                    ArgTypes = clr_arg_types,
+                    ArgNames = func.ArgNames,
+                    CustomAttributes = customAttribs.ToArray(),
                 };
 
                 return func;

@@ -35,12 +35,13 @@ namespace IronPython.Runtime {
             }
         }
 
-        public static PythonType LoadPythonType(Type t, ref PythonType pt) {
+        public static PythonType LoadPythonType(Type t, ref PythonType pt, ref ObjectOperations ops) {
             // If it's already set, just return it 
             if(pt != null)
                 return pt;
             
             var engine = GetDefaultEngine();
+            ops = engine.Operations;
 
             // Add the type's assembly to make sure any pre-generated classes are picked up
             engine.Runtime.LoadAssembly(t.Assembly);
