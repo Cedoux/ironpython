@@ -288,6 +288,10 @@ namespace IronPython.Runtime {
 
                 var pb = tb.DefineProperty(property.Name, PropertyAttributes.None, property.Type, null);
 
+                foreach (var attrib in property.CustomAttributes) {
+                    DefineAttribute(pb, attrib);
+                }
+
                 var attribs = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
                 if (property.HasGetter) {
                     var getter = tb.DefineMethod("get_" + property.Name, attribs, property.Type, Type.EmptyTypes);
@@ -339,6 +343,7 @@ namespace IronPython.Runtime {
 
                     pb.SetSetMethod(setter);
                 }
+
             }
 
             private void DefineConstructor(TypeBuilder tb, ClrMethodInfo method, ConstructorInfo defCtor) {
@@ -446,6 +451,10 @@ namespace IronPython.Runtime {
                 mb.SetCustomAttribute(MakeCab(attrib));
             }
 
+            private void DefineAttribute(PropertyBuilder pb, ClrAttributeInfo attrib) {
+                pb.SetCustomAttribute(MakeCab(attrib));
+            }
+
             private static CustomAttributeBuilder MakeCab(ClrAttributeInfo attrib)
             {
                 ConstructorInfo ctor;
@@ -529,8 +538,7 @@ namespace IronPython.Runtime {
             Type clr_type;
             if (type is Type) {
                 clr_type = (Type)type;
-            }
-            if (type is PythonType) {
+            } else if (type is PythonType) {
                 clr_type = ((PythonType)type).FinalSystemType;
             } else {
                 clr_type = typeof(void);
