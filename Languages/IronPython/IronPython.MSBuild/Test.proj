@@ -3,7 +3,7 @@
   <Import Project="IronPython.tasks" />
 
   <Target Name="Build">
-    <Ipyc />
+    <Ipyc Target="exe" />
   </Target>
   
 </Project>

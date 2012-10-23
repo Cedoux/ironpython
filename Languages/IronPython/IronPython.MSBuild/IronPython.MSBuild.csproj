@@ -34,7 +34,7 @@
     <Message Text="$(OutputPath)\ipyc.exe /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
     <Exec Command="$(OutputPath)\ipyc.exe /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
     <Copy SourceFiles="$(OutputPath)\IronPython.dll;$(OutputPath)\Microsoft.Scripting.dll;$(OutputPath)\Microsoft.Dynamic.dll" 
-          DestinationFolder="MSBuildProjectDirectory" />
-    <!--<Move SourceFiles="ipyc.exe" DestinationFolder="$(OutputPath)" />-->
+          DestinationFolder="$(MSBuildProjectDirectory)" />
+    <Copy SourceFiles="ipyc.exe" DestinationFolder="$(OutputPath)" />
   </Target>
 </Project>
