@@ -3,7 +3,11 @@
   <Import Project="IronPython.tasks" />
 
   <Target Name="Build">
-    <Ipyc Target="exe" />
+    <Ipyc TargetType="exe"
+          OutputAssembly="foo"
+          MainFile="foo.py"
+          Platform="x86"
+          Embed="true"/>
   </Target>
   
 </Project>

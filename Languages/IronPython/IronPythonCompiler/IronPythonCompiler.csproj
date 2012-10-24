@@ -23,16 +23,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="pyc.py" />
+    <Compile Include="pyc.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ipy.ico" />
   </ItemGroup>
 
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
-  <Target Name="Build" Returns="$(TargetPath)">
+  <Target Name="Build" Returns="$(TargetPath)" Inputs="@(Compile)" Outputs="$(TargetPath)">
     <Exec 
-      Command="$(OutputPath)\ipy.exe $(MSBuildProjectDirectory)\pyc.py /embed /target:$(OutputType) /out:$(AssemblyName) /main:pyc.py" />
-    <Move SourceFiles="ipyc.exe" DestinationFolder="$(OutputPath)" />
+      Command="$(OutputPath)\ipy.exe $(MSBuildProjectDirectory)\pyc.py /platform:$(PlatformTarget) /embed /target:$(OutputType) /out:$(AssemblyName) /main:pyc.py" />
+    <Move SourceFiles="$(AssemblyName).exe" DestinationFolder="$(OutputPath)" />
   </Target>
 </Project>
