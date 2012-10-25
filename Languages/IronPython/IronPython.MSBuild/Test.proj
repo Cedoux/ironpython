@@ -7,7 +7,8 @@
           OutputAssembly="foo"
           MainFile="foo.py"
           Platform="x86"
-          Embed="true"/>
+          Embed="true"
+          Sources="foo.py" />
   </Target>
   
 </Project>

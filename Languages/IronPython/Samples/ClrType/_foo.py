@@ -15,8 +15,8 @@ class Foo(object, IDisposable):
     def frob(self, a, b, c):
         return 42
     
-    @clr.attributes([_a(System.ObsoleteAttribute)])
     @clr.property(int)
+    @clr.attributes([_a(System.ObsoleteAttribute)])
     def bar(self):
         return -1
     

@@ -4,6 +4,7 @@ clr.AddReference("Microsoft.Build.Utilities.v4.0")
 
 from System import Array
 from System.Diagnostics import Debugger
+from System.IO import Path
 
 from Microsoft.Build.Utilities import ToolTask, CommandLineBuilder
 from Microsoft.Build.Framework import MessageImportance, OutputAttribute, ITaskItem
@@ -89,10 +90,10 @@ class Ipyc(ToolTask):
 
         clb.AppendSwitchIfNotNull("/out:", self.OutputAssembly)
 
-        clb.AppendSwitchIfNotNull("/target:", self.Target)
+        clb.AppendSwitchIfNotNull("/target:", self.TargetType)
 
         if self.TargetType in ('exe', 'winexe'):
-            cld.AppendSwitchIfNotNull("/main:", self.MainFile)
+            clb.AppendSwitchIfNotNull("/main:", self.MainFile)
 
             if self.Standalone:
                 clb.AppendSwitch("/standalone")
@@ -111,9 +112,10 @@ class Ipyc(ToolTask):
 
         args = clb.ToString()
 
-        Log.LogMessage(MessageImportance.High, "Args: %s" % args)
+        self.Log.LogMessage(MessageImportance.High, "Args: %s" % args)
 
         return args
 
     def GenerateFullPathToTool(self):
-        return r'C:\Users\Jeff\Documents\Repositories\jdhardy-ironpython\bin\Debug'
+        dir = r'C:\Users\Jeff\Documents\Repositories\jdhardy-ironpython\bin\Debug'
+        return Path.Combine(dir, self.ToolName)

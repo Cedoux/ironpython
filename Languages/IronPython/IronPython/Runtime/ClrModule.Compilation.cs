@@ -227,6 +227,29 @@ namespace IronPython.Runtime {
                 var pythonTypeField = tg.AddStaticField(typeof(PythonType), "__pythonType");
                 var objectOpsField = tg.AddStaticField(typeof(ObjectOperations), "__operations");
 
+                ConstructorInfo defCtor = DefineForwardingConstructors(baseType, tb, pythonTypeField, objectOpsField);
+
+                foreach(var method in methods) {
+                    if (method.Name == "__new__") {
+                        DefineConstructor(tb, method, defCtor);
+                    } else {
+                        DefineMethod(tb, method, objectOpsField);
+                    }
+                }
+
+                // TODO Fields
+
+                foreach (var property in properties) {
+                    DefineProperty(tb, property, pythonTypeField, objectOpsField);
+                }
+
+                return tb.CreateType();
+            }
+
+            private static ConstructorInfo DefineForwardingConstructors(Type baseType, TypeBuilder tb, FieldBuilder pythonTypeField, FieldBuilder objectOpsField) {
+                var invokeMember = typeof(ObjectOperations).GetMethod("InvokeMember",
+                    new[] { typeof(object), typeof(string), typeof(object[]) });
+
                 ConstructorInfo defCtor = null;
                 foreach (var baseCtor in baseType.GetConstructors()) {
                     var ctorParams = baseCtor.GetParameters();
@@ -240,39 +263,41 @@ namespace IronPython.Runtime {
                             baseCtor.Attributes,
                             baseCtor.CallingConvention,
                             ctorParams.Select(p => p.ParameterType).ToArray());
-                    var newCtorIL = new ILGen(newCtor.GetILGenerator());
-                    newCtorIL.EmitLoadArg(0);
-                    newCtorIL.EmitType(tb);
-                    newCtorIL.EmitFieldAddress(pythonTypeField);
-                    newCtorIL.EmitFieldAddress(objectOpsField);
-                    newCtorIL.EmitCall(typeof(DefaultEngine), "LoadPythonType");
-                    for (int i = 1; i <= ctorParams.Length; ++i) {
-                        newCtorIL.Emit(OpCodes.Ldarg, i);
+                    var ilGen = new ILGen(newCtor.GetILGenerator());
 
+                    // call the base class constructor
+                    ilGen.EmitLoadArg(0);
+                    ilGen.EmitType(tb);
+                    ilGen.EmitFieldAddress(pythonTypeField);
+                    ilGen.EmitFieldAddress(objectOpsField);
+                    ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                    for (int i = 1; i <= ctorParams.Length; ++i) {
+                        ilGen.Emit(OpCodes.Ldarg, i);
                     }
-                    newCtorIL.Emit(OpCodes.Call, baseCtor);
-                    newCtorIL.Emit(OpCodes.Ret);
+                    ilGen.Emit(OpCodes.Call, baseCtor);
+
+                    // call __init__
+                    // Load all of the arguments into a local array
+                    var args = ilGen.DeclareLocal(typeof(object[]));
+                    ilGen.EmitArray(typeof(object), ctorParams.Length, (i) => {
+                        ilGen.EmitLoadArg(i+1);
+                    });
+                    ilGen.Emit(OpCodes.Stloc, args);
+
+                    ilGen.EmitFieldGet(objectOpsField);
+                    ilGen.EmitLoadArg(0); // load "this"
+                    ilGen.EmitString("__init__");
+                    ilGen.Emit(OpCodes.Ldloc, args);
+                    ilGen.EmitCall(invokeMember);
+
+                    ilGen.Emit(OpCodes.Pop);
+                    ilGen.Emit(OpCodes.Ret);
 
                     if (ctorParams.Length == 0) {
                         defCtor = newCtor;
                 }
                 }
-
-                foreach(var method in methods) {
-                    if (method.Name == "__new__") {
-                        DefineConstructor(tb, method, defCtor);
-                    } else {
-                        DefineMethod(tb, method, objectOpsField);
-                }
-                }
-
-                // TODO Fields
-
-                foreach (var property in properties) {
-                    DefineProperty(tb, property, pythonTypeField, objectOpsField);
-                }
-
-                return tb.CreateType();
+                return defCtor;
             }
 
             private void DefineProperty(TypeBuilder tb, ClrPropertyInfo property, FieldBuilder pythonTypeField, FieldBuilder objectOpsField) {
@@ -337,6 +362,7 @@ namespace IronPython.Runtime {
                     // Call ObjectOperations.SetMember
                     ilGen.EmitString(property.Name);
                     ilGen.EmitLoadArg(property.IsStatic ? 0 : 1);
+                    ilGen.Emit(OpCodes.Box, property.Type);
                     ilGen.EmitCall(setMember);
 
                     ilGen.Emit(OpCodes.Ret);
