@@ -425,9 +425,8 @@ namespace IronPython.Runtime {
                     DefineAttribute(mb, attrib);
                 }
 
-                var argNames = method.ArgNames;
-                for(int i = 0; i < method.ArgTypes.Length; ++i) {
-                    mb.DefineParameter(i+1, ParameterAttributes.None, argNames[i+1]);
+                for(int p = 1, n = 0; n < method.ArgTypes.Length; ++p, ++n) {
+                    mb.DefineParameter(p, ParameterAttributes.None, method.ArgNames[n]);
                 }
 
                 var ilGen = new ILGen(mb.GetILGenerator());
@@ -513,8 +512,13 @@ namespace IronPython.Runtime {
                                         .Select(type => ConvertPythonTypeToClr(type))
                                         .ToArray();
                 } else {
-                    clr_arg_types = Enumerable.Repeat(typeof(object), func.NormalArgumentCount).ToArray();
+                    // ignore the self argument
+                    var realArgs = func.NormalArgumentCount - 1;
+                    clr_arg_types = Enumerable.Repeat(typeof(object), realArgs).ToArray();
                 }
+
+                // ignore the self argument
+                var argNames = ArrayUtils.ShiftLeft(func.ArgNames, 1);
 
                 object attribs_obj;
                 var customAttribs = func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
@@ -525,7 +529,7 @@ namespace IronPython.Runtime {
                     Name = func.__name__,
                     ReturnType = clr_return_type,
                     ArgTypes = clr_arg_types,
-                    ArgNames = func.ArgNames,
+                    ArgNames = argNames,
                     CustomAttributes = customAttribs.ToArray(),
                 };
 

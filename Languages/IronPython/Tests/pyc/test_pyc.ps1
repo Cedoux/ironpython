@@ -151,6 +151,9 @@ testcase-helper "$CURRPATH\other_hw.py /main:$CURRPATH\console_hw.py" @("console
 #--Console HelloWorld w/ args
 testcase-helper "/main:$CURRPATH\console_hw_args.py" @("console_hw_args.exe", "console_hw_args.dll") "console_hw_args.exe" 0 "(Compiled) Hello World ['foo']" "foo"
 
+#--Console HelloWorld w/ args
+testcase-helper "/embed /main:$CURRPATH\console_hw_args.py" @("console_hw_args.exe") "console_hw_args.exe" 0 "(Compiled) Hello World ['foo']" "foo"
+
 #--WinForms HelloWorld
 testcase-helper "/main:$CURRPATH\winforms_hw.py /target:winexe" @("winforms_hw.exe", "winforms_hw.dll") "winforms_hw.exe" 0 "(Compiled WinForms) Hello World"
 
