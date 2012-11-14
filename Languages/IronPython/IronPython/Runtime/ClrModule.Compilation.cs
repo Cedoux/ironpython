@@ -40,6 +40,7 @@ namespace IronPython.Runtime {
             internal string[] ArgNames { get; set; }
             internal Type[] ArgTypes { get; set; }
             internal bool IsStatic { get; set; }
+            internal bool IsVirtual { get; set; }
             internal ClrAttributeInfo[] CustomAttributes { get; set; }
         }
 
@@ -49,6 +50,7 @@ namespace IronPython.Runtime {
             internal string Name { get; set; }
             internal Type Type { get; set; }
             internal bool IsStatic { get; set; }
+            internal bool IsVirtual { get; set; }
             internal ClrAttributeInfo[] CustomAttributes { get; set; }
         }
 
@@ -163,7 +165,7 @@ namespace IronPython.Runtime {
                                 throw new Exception();
 
                         clr_method_info.Name = func.__name__;
-                        clr_method_info.IsStatic = isStatic;
+                        clr_method_info.IsStatic = clr_method_info.IsStatic || isStatic;
                             yield return clr_method_info;
                         }
                     }
@@ -199,7 +201,7 @@ namespace IronPython.Runtime {
                             Name = clr_method_info.Name,
                             Type = clr_method_info.ReturnType,
                             CustomAttributes = clr_method_info.CustomAttributes,
-                            IsStatic = isStatic
+                            IsStatic = isStatic || clr_method_info.IsStatic
                         };
                     }
                 }
@@ -233,7 +235,7 @@ namespace IronPython.Runtime {
                     if (method.Name == "__new__") {
                         DefineConstructor(tb, method, defCtor);
                     } else {
-                        DefineMethod(tb, method, objectOpsField);
+                        DefineMethod(tb, method, pythonTypeField, objectOpsField);
                     }
                 }
 
@@ -301,6 +303,8 @@ namespace IronPython.Runtime {
             }
 
             private void DefineProperty(TypeBuilder tb, ClrPropertyInfo property, FieldBuilder pythonTypeField, FieldBuilder objectOpsField) {
+                ContractUtils.Requires(!(property.IsVirtual && property.IsStatic));
+
                 // Type.GetMethod raises an AmbiguousMatchException if there is a generic 
                 // and a non-generic method (like ObjectOperations.GetMember) with the 
                 // same name and signature. So we have to do things the hard way.
@@ -318,13 +322,28 @@ namespace IronPython.Runtime {
                 }
 
                 var attribs = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
+                if (property.IsVirtual) {
+                    attribs |= MethodAttributes.Virtual;
+                }
+
+                if (property.IsStatic) {
+                    attribs |= MethodAttributes.Static;
+                }
+
                 if (property.HasGetter) {
                     var getter = tb.DefineMethod("get_" + property.Name, attribs, property.Type, Type.EmptyTypes);
                     var ilGen = new ILGen(getter.GetILGenerator());
 
+                    if (property.IsStatic) {
+                        ilGen.EmitType(tb);
+                        ilGen.EmitFieldAddress(pythonTypeField);
+                        ilGen.EmitFieldAddress(objectOpsField);
+                        ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                    }
+
                     ilGen.EmitFieldGet(objectOpsField);
                     if (property.IsStatic) {
-                        throw new Exception("static currently unsupported");
+                        ilGen.EmitFieldGet(pythonTypeField); // load the python type
                     } else {
                         ilGen.EmitLoadArg(0); // load "this"
                     }
@@ -352,9 +371,16 @@ namespace IronPython.Runtime {
                     var setter = tb.DefineMethod("set_" + property.Name, attribs, null, new[] { property.Type });
                     var ilGen = new ILGen(setter.GetILGenerator());
 
+                    if (property.IsStatic) {
+                        ilGen.EmitType(tb);
+                        ilGen.EmitFieldAddress(pythonTypeField);
+                        ilGen.EmitFieldAddress(objectOpsField);
+                        ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                    }
+
                     ilGen.EmitFieldGet(objectOpsField);
                     if (property.IsStatic) {
-                        throw new Exception("static currently unsupported");
+                        ilGen.EmitFieldGet(pythonTypeField); // load the python type
                     } else {
                         ilGen.EmitLoadArg(0); // load "this"
                     }
@@ -395,7 +421,10 @@ namespace IronPython.Runtime {
                 ilGen.Emit(OpCodes.Ret);
             }
 
-            private void DefineMethod(TypeBuilder tb, ClrMethodInfo method, FieldBuilder objectOpsField) {
+            private void DefineMethod(TypeBuilder tb, ClrMethodInfo method, FieldBuilder pythonTypeField, FieldBuilder objectOpsField) {
+                ContractUtils.Requires(method.ArgNames.Length == method.ArgTypes.Length);
+                ContractUtils.Requires(!(method.IsVirtual && method.IsStatic));
+
                 var invokeMember = typeof(ObjectOperations).GetMethod("InvokeMember", 
                     new[] { typeof(object), typeof(string), typeof(object[]) });
 
@@ -411,8 +440,15 @@ namespace IronPython.Runtime {
 
                 var attributes = MethodAttributes.Public;
 
-                // TODO Overrides
-                // TODO Static methods
+                if (method.IsVirtual) {
+                    attributes |= MethodAttributes.Virtual;
+                }
+
+                if (method.IsStatic) {
+                    attributes |= MethodAttributes.Static;
+                }
+
+                // Overrides are handled by the class generated by NewTypeMaker
 
                 var mb = tb.DefineMethod(
                     method.Name,
@@ -431,7 +467,12 @@ namespace IronPython.Runtime {
 
                 var ilGen = new ILGen(mb.GetILGenerator());
 
-                // TODO Actual implementation to call Python method
+                if (method.IsStatic) {
+                    ilGen.EmitType(tb);
+                    ilGen.EmitFieldAddress(pythonTypeField);
+                    ilGen.EmitFieldAddress(objectOpsField);
+                    ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                }
 
                 // Load all of the arguments into a local array
                 var args = ilGen.DeclareLocal(typeof(object[]));
@@ -442,7 +483,7 @@ namespace IronPython.Runtime {
 
                 ilGen.EmitFieldGet(objectOpsField);
                 if (method.IsStatic) {
-                    throw new Exception("static currently unsupported");
+                    ilGen.EmitFieldGet(pythonTypeField); // load the python type
                 } else {
                     ilGen.EmitLoadArg(0); // load "this"
                 }
@@ -503,8 +544,14 @@ namespace IronPython.Runtime {
         /// <returns></returns>
         public static Func<PythonFunction, PythonFunction> method(
                 [DefaultParameterValue(null)]object return_type, 
-                [DefaultParameterValue(null)]IEnumerable<object> arg_types) {
+                [DefaultParameterValue(null)]IEnumerable<object> arg_types,
+                [DefaultParameterValue(true)]bool @virtual,
+                [DefaultParameterValue(false)]bool @static) {
             return func => {
+                if(@virtual && @static) {
+                    throw new ArgumentException("Methods cannot be both static and virtual.");
+                }
+
                 Type clr_return_type = ConvertPythonTypeToClr(return_type ?? typeof(void));
                 Type[] clr_arg_types;
                 if (arg_types != null) {
@@ -512,13 +559,17 @@ namespace IronPython.Runtime {
                                         .Select(type => ConvertPythonTypeToClr(type))
                                         .ToArray();
                 } else {
-                    // ignore the self argument
-                    var realArgs = func.NormalArgumentCount - 1;
-                    clr_arg_types = Enumerable.Repeat(typeof(object), realArgs).ToArray();
+                    // ignore the self argument on instance methods
+                    var realArgCount = func.NormalArgumentCount - (!@static ? 1 : 0);
+                    clr_arg_types = Enumerable.Repeat(typeof(object), realArgCount).ToArray();
                 }
 
-                // ignore the self argument
-                var argNames = ArrayUtils.ShiftLeft(func.ArgNames, 1);
+                if (clr_arg_types.Length != func.NormalArgumentCount) {
+                    // throw new ArgumentException("Not enough types provided.", "arg_types");
+                }
+
+                // ignore the self argument on instance methods
+                var argNames = !@static ? ArrayUtils.ShiftLeft(func.ArgNames, 1) : func.ArgNames;
 
                 object attribs_obj;
                 var customAttribs = func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
@@ -531,18 +582,39 @@ namespace IronPython.Runtime {
                     ArgTypes = clr_arg_types,
                     ArgNames = argNames,
                     CustomAttributes = customAttribs.ToArray(),
+                    IsVirtual = @virtual,
+                    IsStatic = @static
                 };
 
                 return func;
             };
         }
 
-        public static Func<PythonFunction, PythonProperty> property(Type propertyType) {
+        public static Func<PythonFunction, staticmethod> staticmethod(
+                [DefaultParameterValue(null)]object return_type,
+                [DefaultParameterValue(null)]IEnumerable<object> arg_types) {
+            return func => {
+                var result = new staticmethod(method(return_type, arg_types, false, true)(func));
+                return result;
+            };
+        }
+
+        public static Func<PythonFunction, PythonProperty> property(
+                Type propertyType,
+                [DefaultParameterValue(true)]bool @virtual,
+                [DefaultParameterValue(false)]bool @static) {
             return func => {
                 var prop = new PythonProperty();
-                prop.__init__(method(propertyType, null)(func), null, null, null);
+                prop.__init__(method(propertyType, null, @virtual, @static)(func), null, null, null);
 
                 return prop;
+            };
+        }
+
+        public static Func<PythonFunction, PythonProperty> staticproperty(
+                Type propertyType) {
+            return func => {
+                return property(propertyType, false, true)(func);
             };
         }
 
