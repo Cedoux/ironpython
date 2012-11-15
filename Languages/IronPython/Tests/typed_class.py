@@ -9,6 +9,8 @@ class TypedClass(object):
     __clr_namespace__ = "IronPython.Tests"
     
     # TODO Constructors
+    def __init__(self):
+        self._value = -1
     
     # Properties
     @clr.property(int)
@@ -72,11 +74,7 @@ class TypedClass(object):
     
     #~ # static methods
     @clr.staticmethod(int, [str, float])
-    def StaticMethodWithArgs1(a, b):
-        pass
-        
-    @clr.method(int, [str, float], static=True, virtual=False)
-    def StaticMethodWithArgs2(a, b):
+    def StaticMethodWithArgs(a, b):
         pass
     
     #~ @clr.staticmethod(int, [str, float])

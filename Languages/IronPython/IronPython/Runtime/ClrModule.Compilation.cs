@@ -31,6 +31,7 @@ using Microsoft.Scripting.Utils;
 using IronPython.Runtime.Operations;
 using IronPython.Runtime.Types;
 using Microsoft.Scripting.Hosting;
+using System.Collections;
 
 namespace IronPython.Runtime {
     public static partial class ClrModule {
@@ -158,18 +159,49 @@ namespace IronPython.Runtime {
                         }
                     }
 
-                        object clr_method_info_obj;
-                        if(func.__dict__.TryGetValue("_clr_method_info", out clr_method_info_obj)) {
-                            var clr_method_info = clr_method_info_obj as ClrMethodInfo;
-                            if(clr_method_info == null)
-                                throw new Exception();
+                    object clr_return_type;
+                    if (func.__dict__.TryGetValue("__clr_return_type__", out clr_return_type)) {
+                        Type returnType = ConvertPythonTypeToClr(clr_return_type ?? typeof(void));
 
-                        clr_method_info.Name = func.__name__;
-                        clr_method_info.IsStatic = clr_method_info.IsStatic || isStatic;
-                            yield return clr_method_info;
+                        // ignore the 'self' parameter to instance methods
+                        string[] argNames = isStatic ? func.ArgNames : ArrayUtils.ShiftLeft(func.ArgNames, 1);
+
+                        object clr_arg_types = null;
+                        Type[] argTypes = null;
+                        if (func.__dict__.TryGetValue("__clr_arg_types__", out clr_arg_types) && clr_arg_types != null) {
+                            argTypes = ((List)clr_arg_types)
+                                            .Select(t => ConvertPythonTypeToClr(t ?? typeof(object)))
+                                            .ToArray();
+                        } else {
+                            argTypes = Enumerable.Repeat(typeof(object), argNames.Length).ToArray();
                         }
+
+                        bool isVirtual = true;
+                        object isVirtualObj;
+                        if (func.__dict__.TryGetValue("__clr_virtual__", out isVirtualObj)) {
+                            isVirtual = (bool)isVirtualObj;
+                        }
+
+                        string name = func.__name__;
+
+                        ClrAttributeInfo[] customAttribs = null;
+                        object clr_attributes;
+                        if (func.__dict__.TryGetValue("__clr_attributes__", out clr_attributes)) {
+                            customAttribs = ((List)clr_attributes).Cast<ClrAttributeInfo>().ToArray();
+                        }
+
+                        yield return new ClrMethodInfo {
+                            Name = name,
+                            ReturnType = returnType,
+                            ArgTypes = argTypes,
+                            ArgNames = argNames,
+                            CustomAttributes = customAttribs,
+                            IsVirtual = isVirtual,
+                            IsStatic = isStatic
+                        };
                     }
                 }
+            }
 
             private IEnumerable<ClrPropertyInfo> GetTypedProperties(PythonDictionary dict) {
                 foreach (var value in dict.Values) {
@@ -181,27 +213,40 @@ namespace IronPython.Runtime {
 
                     PythonFunction func = prop.fget as PythonFunction;
                     if(func == null) {
-                        if(value is staticmethod) {
-                            func = (PythonFunction)((staticmethod)value).__func__;
+                        if (prop.fget is staticmethod) {
+                            func = (PythonFunction)((staticmethod)prop.fget).__func__;
                             isStatic = true;
                         } else {
                             continue;
                         }
                     }
 
-                    object clr_method_info_obj;
-                    if (func.__dict__.TryGetValue("_clr_method_info", out clr_method_info_obj)) {
-                        var clr_method_info = clr_method_info_obj as ClrMethodInfo;
-                        if(clr_method_info == null)
-                            throw new Exception();
+                    object clr_return_type;
+                    if (func.__dict__.TryGetValue("__clr_return_type__", out clr_return_type)) {
+                        Type returnType = (Type)clr_return_type;
+
+                        bool isVirtual = true;
+                        object isVirtualObj;
+                        if (func.__dict__.TryGetValue("__clr_virtual__", out isVirtualObj)) {
+                            isVirtual = (bool)isVirtualObj;
+                        }
+
+                        string name = func.__name__;
+
+                        ClrAttributeInfo[] customAttribs = null;
+                        object clr_attributes;
+                        if (func.__dict__.TryGetValue("__clr_attributes__", out clr_attributes)) {
+                            customAttribs = ((List)clr_attributes).Cast<ClrAttributeInfo>().ToArray();
+                        }
 
                         yield return new ClrPropertyInfo {
                             HasGetter = prop.fget != null,
                             HasSetter = prop.fset != null,
-                            Name = clr_method_info.Name,
-                            Type = clr_method_info.ReturnType,
-                            CustomAttributes = clr_method_info.CustomAttributes,
-                            IsStatic = isStatic || clr_method_info.IsStatic
+                            Name = name,
+                            Type = returnType,
+                            CustomAttributes = customAttribs,
+                            IsStatic = isStatic,
+                            IsVirtual = isVirtual
                         };
                     }
                 }
@@ -317,8 +362,10 @@ namespace IronPython.Runtime {
 
                 var pb = tb.DefineProperty(property.Name, PropertyAttributes.None, property.Type, null);
 
+                if (property.CustomAttributes != null) {
                 foreach (var attrib in property.CustomAttributes) {
                     DefineAttribute(pb, attrib);
+                }
                 }
 
                 var attribs = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
@@ -339,6 +386,7 @@ namespace IronPython.Runtime {
                         ilGen.EmitFieldAddress(pythonTypeField);
                         ilGen.EmitFieldAddress(objectOpsField);
                         ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                        ilGen.Emit(OpCodes.Pop);
                     }
 
                     ilGen.EmitFieldGet(objectOpsField);
@@ -376,6 +424,7 @@ namespace IronPython.Runtime {
                         ilGen.EmitFieldAddress(pythonTypeField);
                         ilGen.EmitFieldAddress(objectOpsField);
                         ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                        ilGen.Emit(OpCodes.Pop);
                     }
 
                     ilGen.EmitFieldGet(objectOpsField);
@@ -457,8 +506,10 @@ namespace IronPython.Runtime {
                     method.ArgTypes
                 );
 
+                if (method.CustomAttributes != null) {
                 foreach (var attrib in method.CustomAttributes) {
                     DefineAttribute(mb, attrib);
+                }
                 }
 
                 for(int p = 1, n = 0; n < method.ArgTypes.Length; ++p, ++n) {
@@ -472,6 +523,7 @@ namespace IronPython.Runtime {
                     ilGen.EmitFieldAddress(pythonTypeField);
                     ilGen.EmitFieldAddress(objectOpsField);
                     ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
+                    ilGen.Emit(OpCodes.Pop);
                 }
 
                 // Load all of the arguments into a local array
@@ -544,47 +596,21 @@ namespace IronPython.Runtime {
         /// <returns></returns>
         public static Func<PythonFunction, PythonFunction> method(
                 [DefaultParameterValue(null)]object return_type, 
-                [DefaultParameterValue(null)]IEnumerable<object> arg_types,
-                [DefaultParameterValue(true)]bool @virtual,
-                [DefaultParameterValue(false)]bool @static) {
+                [DefaultParameterValue(null)]IEnumerable arg_types,
+                [DefaultParameterValue(true)]bool @virtual) {
             return func => {
-                if(@virtual && @static) {
-                    throw new ArgumentException("Methods cannot be both static and virtual.");
-                }
+                func.__dict__["__clr_return_type__"] = return_type;
 
-                Type clr_return_type = ConvertPythonTypeToClr(return_type ?? typeof(void));
-                Type[] clr_arg_types;
+                List clr_arg_types = null;
                 if (arg_types != null) {
-                    clr_arg_types = arg_types
-                                        .Select(type => ConvertPythonTypeToClr(type))
-                                        .ToArray();
-                } else {
-                    // ignore the self argument on instance methods
-                    var realArgCount = func.NormalArgumentCount - (!@static ? 1 : 0);
-                    clr_arg_types = Enumerable.Repeat(typeof(object), realArgCount).ToArray();
+                    clr_arg_types = arg_types as List;
+                    if (clr_arg_types == null) {
+                        clr_arg_types = new List(arg_types.Cast<object>().ToList());
+                }
                 }
 
-                if (clr_arg_types.Length != func.NormalArgumentCount) {
-                    // throw new ArgumentException("Not enough types provided.", "arg_types");
-                }
-
-                // ignore the self argument on instance methods
-                var argNames = !@static ? ArrayUtils.ShiftLeft(func.ArgNames, 1) : func.ArgNames;
-
-                object attribs_obj;
-                var customAttribs = func.__dict__.TryGetValue("__clr_attributes__", out attribs_obj) ?
-                    (IEnumerable<ClrAttributeInfo>)attribs_obj :
-                    Enumerable.Empty<ClrAttributeInfo>();
-
-                func.__dict__["_clr_method_info"] = new ClrMethodInfo {
-                    Name = func.__name__,
-                    ReturnType = clr_return_type,
-                    ArgTypes = clr_arg_types,
-                    ArgNames = argNames,
-                    CustomAttributes = customAttribs.ToArray(),
-                    IsVirtual = @virtual,
-                    IsStatic = @static
-                };
+                func.__dict__["__clr_arg_types__"] = clr_arg_types;
+                func.__dict__["__clr_virtual__"] = @virtual;
 
                 return func;
             };
@@ -594,18 +620,17 @@ namespace IronPython.Runtime {
                 [DefaultParameterValue(null)]object return_type,
                 [DefaultParameterValue(null)]IEnumerable<object> arg_types) {
             return func => {
-                var result = new staticmethod(method(return_type, arg_types, false, true)(func));
+                var result = new staticmethod(method(return_type, arg_types, false)(func));
                 return result;
             };
         }
 
         public static Func<PythonFunction, PythonProperty> property(
                 Type propertyType,
-                [DefaultParameterValue(true)]bool @virtual,
-                [DefaultParameterValue(false)]bool @static) {
+                [DefaultParameterValue(true)]bool @virtual) {
             return func => {
                 var prop = new PythonProperty();
-                prop.__init__(method(propertyType, null, @virtual, @static)(func), null, null, null);
+                prop.__init__(method(propertyType, null, @virtual)(func), null, null, null);
 
                 return prop;
             };
@@ -614,14 +639,40 @@ namespace IronPython.Runtime {
         public static Func<PythonFunction, PythonProperty> staticproperty(
                 Type propertyType) {
             return func => {
-                return property(propertyType, false, true)(func);
+                var prop = new PythonProperty();
+                prop.__init__(staticmethod(propertyType, null)(func), null, null, null);
+
+                return prop;
+            };
+        }
+
+        public static Func<PythonFunction, PythonFunction> attribute(
+                ClrAttributeInfo attrib) {
+            return func => {
+                List attributes;
+                if (func.__dict__.ContainsKey("__clr_attributes__")) {
+                    attributes = (List)func.__dict__["__clr_attributes__"];
+                } else {
+                    attributes = new List();
+                    func.__dict__["clr_attributes__"] = attributes;
+                }
+                attributes.Add(attrib);
+
+                return func;
             };
         }
 
         public static Func<PythonFunction, PythonFunction> attributes(
                 IEnumerable<ClrAttributeInfo> attribs) {
             return func => {
-                func.__dict__["__clr_attributes__"] = attribs;
+                List attributes;
+                if (func.__dict__.ContainsKey("__clr_attributes__")) {
+                    attributes = (List)func.__dict__["__clr_attributes__"];
+                } else {
+                    attributes = new List();
+                    func.__dict__["clr_attributes__"] = attributes;
+                }
+                attributes.AddRange(attribs);
 
                 return func;
             };
