@@ -21,6 +21,14 @@ class Ipyc(ToolTask):
         self.switches = {}
 
     @clr.property(bool)
+    def CompileTypes(self):
+        return self.switches.get("CompileTypes", False)
+    
+    @CompileTypes.setter
+    def CompileTypes(self, value):
+        self.switches["CompileTypes"] = value
+    
+    @clr.property(bool)
     def Embed(self):
         return self.switches.get("Embed", False)
     
@@ -91,6 +99,9 @@ class Ipyc(ToolTask):
         clb.AppendSwitchIfNotNull("/out:", self.OutputAssembly)
 
         clb.AppendSwitchIfNotNull("/target:", self.TargetType)
+
+        if self.CompileTypes:
+            clb.AppendSwitch("/compiletypes")
 
         if self.TargetType in ('exe', 'winexe'):
             clb.AppendSwitchIfNotNull("/main:", self.MainFile)

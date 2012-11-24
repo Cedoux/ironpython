@@ -31,8 +31,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
   <Target Name="Build" Returns="$(TargetPath)" Inputs="@(Compile)" Outputs="$(TargetPath)">
-    <Message Text="$(OutputPath)\ipyc.exe /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
-    <Exec Command="$(OutputPath)\ipyc.exe /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
+    <Message Text="$(OutputPath)\ipyc.exe /compiletypes /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
+    <Exec Command="$(OutputPath)\ipyc.exe /compiletypes /target:$(OutputType) /out:$(AssemblyName) @(Compile)" />
     <Copy SourceFiles="$(OutputPath)\IronPython.dll;$(OutputPath)\Microsoft.Scripting.dll;$(OutputPath)\Microsoft.Dynamic.dll" 
           DestinationFolder="$(MSBuildProjectDirectory)" />
   </Target>

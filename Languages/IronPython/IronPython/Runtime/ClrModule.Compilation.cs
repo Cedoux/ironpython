@@ -730,6 +730,13 @@ namespace IronPython.Runtime {
 
             Dictionary<string, string> packageMap = BuildPackageMap(filenames);
 
+            bool shouldCompileTypes = false;
+            object compileTypes;
+            if (kwArgs != null && kwArgs.TryGetValue("compileTypes", out compileTypes)) {
+                bool? boolCompileTypes = compileTypes as bool?;
+                shouldCompileTypes = boolCompileTypes != null && boolCompileTypes.GetValueOrDefault(false);
+            }
+
             List<SavableScriptCode> code = new List<SavableScriptCode>();
             foreach (string filename in filenames) {
                 if (!pc.DomainManager.Platform.FileExists(filename)) {
@@ -773,7 +780,15 @@ namespace IronPython.Runtime {
                     SourceCodeKind.File
                 );
 
-                sc = PythonContext.GetContext(context).GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
+                sc = pc.GetScriptCode(su, modName, ModuleOptions.Initialize, Compiler.CompilationMode.ToDisk);
+                if (shouldCompileTypes) {
+                    // Compile the module to trigger type generation and static compilation
+                    // The Static generation code uses clr.compiledAssembly, which has been redirected to
+                    // the same assembly generator as the rest of the code.
+                    // This is equivalent to importing the module, so it is optional. CLR types can still
+                    // be generated at runtime.
+                    pc.CompileModule(filename, modName, su, ModuleOptions.Initialize | ModuleOptions.Optimized);
+                }
 
                 code.Add((SavableScriptCode)sc);
             }

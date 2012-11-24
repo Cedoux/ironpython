@@ -28,11 +28,12 @@
   <ItemGroup>
     <Content Include="ipy.ico" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Compile Include="options.py" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
   <Target Name="Build" Returns="$(TargetPath)" Inputs="@(Compile)" Outputs="$(TargetPath)">
-    <Exec 
-      Command="$(OutputPath)\ipy.exe $(MSBuildProjectDirectory)\pyc.py /platform:$(PlatformTarget) /embed /target:$(OutputType) /out:$(AssemblyName) /main:pyc.py" />
+    <Exec Command="$(OutputPath)\ipy.exe $(MSBuildProjectDirectory)\pyc.py /platform:$(PlatformTarget) /embed /target:$(OutputType) /out:$(AssemblyName) /main:pyc.py @(Compile)" />
     <Move SourceFiles="$(AssemblyName).exe" DestinationFolder="$(OutputPath)" />
   </Target>
 </Project>
