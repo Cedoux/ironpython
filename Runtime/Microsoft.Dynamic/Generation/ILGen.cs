@@ -1441,6 +1441,31 @@ namespace Microsoft.Scripting.Generation {
         }
 
         /// <summary>
+        /// Emits an array of values of count size.  The items are emitted via the callback
+        /// which is provided with the current item index to emit.
+        /// </summary>
+        public LocalBuilder EmitLocalArray(Type elementType, int count, EmitArrayHelper emit) {
+            ContractUtils.RequiresNotNull(elementType, "elementType");
+            ContractUtils.RequiresNotNull(emit, "emit");
+            ContractUtils.Requires(count >= 0, "count", Strings.CountCannotBeNegative);
+
+            var local = DeclareLocal(elementType.MakeArrayType());
+            EmitInt(count);
+            Emit(OpCodes.Newarr, elementType);
+            Emit(OpCodes.Stloc, local);
+            for (int i = 0; i < count; i++) {
+                Emit(OpCodes.Ldloc, local);
+                EmitInt(i);
+
+                emit(i);
+
+                EmitStoreElement(elementType);
+            }
+
+            return local;
+        }
+
+        /// <summary>
         /// Emits an array construction code.  
         /// The code assumes that bounds for all dimensions
         /// are already emitted.

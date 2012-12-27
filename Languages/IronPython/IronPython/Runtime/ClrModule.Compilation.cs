@@ -325,11 +325,10 @@ namespace IronPython.Runtime {
 
                     // call __init__
                     // Load all of the arguments into a local array
-                    var args = ilGen.DeclareLocal(typeof(object[]));
-                    ilGen.EmitArray(typeof(object), ctorParams.Length, (i) => {
-                        ilGen.EmitLoadArg(i+1);
+                    var args = ilGen.EmitLocalArray(typeof(object), ctorParams.Length, (i) => {
+                        ilGen.EmitLoadArg(i);
+                        ilGen.EmitBoxing(ctorParams[i].ParameterType);
                     });
-                    ilGen.Emit(OpCodes.Stloc, args);
 
                     ilGen.EmitFieldGet(objectOpsField);
                     ilGen.EmitLoadArg(0); // load "this"
@@ -406,7 +405,6 @@ namespace IronPython.Runtime {
                     ilGen.EmitFieldGet(objectOpsField);
                     ilGen.Emit(OpCodes.Ldloc, retVal);
                     ilGen.EmitType(property.Type);
-                    ilGen.EmitCall(typeof(Type), "GetTypeFromHandle");
                     ilGen.EmitCall(typeof(ObjectOperations), "ConvertTo", new[] { typeof(object), typeof(Type) });
                     ilGen.EmitUnbox(property.Type);
 
@@ -523,15 +521,14 @@ namespace IronPython.Runtime {
                     ilGen.EmitFieldAddress(pythonTypeField);
                     ilGen.EmitFieldAddress(objectOpsField);
                     ilGen.EmitCall(typeof(DefaultEngine), "LoadPythonType");
-                    ilGen.Emit(OpCodes.Pop);
+                    ilGen.Emit(OpCodes.Pop);    // remove the result of LoadPythonType from the stack
                 }
 
                 // Load all of the arguments into a local array
-                var args = ilGen.DeclareLocal(typeof(object[]));
-                ilGen.EmitArray(typeof(object), method.ArgTypes.Length, (i) => {
-                    ilGen.EmitLoadArg(method.IsStatic ? i : i+1);
+                var args = ilGen.EmitLocalArray(typeof(object), method.ArgTypes.Length, (i) => {
+                    ilGen.EmitLoadArg(method.IsStatic ? i : i + 1);
+                    ilGen.EmitBoxing(method.ArgTypes[i]);
                 });
-                ilGen.Emit(OpCodes.Stloc, args);
 
                 ilGen.EmitFieldGet(objectOpsField);
                 if (method.IsStatic) {
@@ -552,7 +549,6 @@ namespace IronPython.Runtime {
                     ilGen.EmitFieldGet(objectOpsField);
                     ilGen.Emit(OpCodes.Ldloc, retVal);
                     ilGen.EmitType(method.ReturnType);
-                    ilGen.EmitCall(typeof(Type), "GetTypeFromHandle");
                     ilGen.EmitCall(typeof(ObjectOperations), "ConvertTo", new[] { typeof(object), typeof(Type) });
                     ilGen.EmitUnbox(method.ReturnType);
                 } else {

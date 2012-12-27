@@ -17,7 +17,7 @@ class TypedClass(object):
     def ReadOnlyProperty(self):
         return 42
     
-    #~ # --
+    # --
     @clr.property(int)
     def ReadWriteProperty(self):
         return self._value
@@ -36,10 +36,10 @@ class TypedClass(object):
         return 42
     
     # --
-    @clr.property(int)
-    @clr.attributes([Obsolete])
-    def PropertyWithAttribute1(self):
-        return 42
+    #~ @clr.property(int)
+    #~ @clr.attributes([Obsolete])
+    #~ def PropertyWithAttribute1(self):
+        #~ return 42
     
     #~ @clr.attributes([Obsolete])
     #~ @clr.property(int)
@@ -52,30 +52,37 @@ class TypedClass(object):
     
     @clr.method(int)
     def ReturnOnlyMethod(self):
-        pass
+        return 42
     
-    @clr.method(int, [str, float])
+    @clr.method(str, [int, float])
     def MethodWithArgs(self, a, b):
-        pass
+        return str(a + b)
     
-    @clr.method(int, [str, float], virtual=False)
+    @clr.method(str, [int, float], virtual=False)
     def NonVirtualMethodWithArgs(self, a, b):
-        pass
+        return str(a + b)
 
-    @clr.method(int, [str, float])
-    @clr.attributes([Obsolete])
-    def MethodWithAttribute1(self, a, b):
-        pass
+    #~ @clr.method(str, [int, float])
+    #~ @clr.attributes([Obsolete])
+    #~ def MethodWithAttribute1(self, a, b):
+        #~ return str(a + b)
     
-    @clr.attributes([Obsolete])
-    @clr.method(int, [str, float])
-    def MethodWithAttribute2(self, a, b):
-        pass
+    #~ @clr.attributes([Obsolete])
+    #~ @clr.method(str, [int, float])
+    #~ def MethodWithAttribute2(self, a, b):
+        #~ return str(a + b)
     
     #~ # static methods
-    @clr.staticmethod(int, [str, float])
+    @clr.staticmethod(str, [int, float])
     def StaticMethodWithArgs(a, b):
-        pass
+        return str(a + b)
+        
+    # TODO Nullable method
+    # TODO Nullable property
+    
+    # TODO IEnumerable method/property - generator?
+    
+    # TODO *args => param [] method
     
     #~ @clr.staticmethod(int, [str, float])
     #~ @clr.attributes([Obsolete])
