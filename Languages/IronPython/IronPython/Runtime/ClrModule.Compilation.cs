@@ -417,6 +417,8 @@ namespace IronPython.Runtime {
                     var setter = tb.DefineMethod("set_" + property.Name, attribs, null, new[] { property.Type });
                     var ilGen = new ILGen(setter.GetILGenerator());
 
+                    setter.DefineParameter(property.IsStatic ? 0 : 1, ParameterAttributes.None, "value");
+
                     if (property.IsStatic) {
                         ilGen.EmitType(tb);
                         ilGen.EmitFieldAddress(pythonTypeField);
