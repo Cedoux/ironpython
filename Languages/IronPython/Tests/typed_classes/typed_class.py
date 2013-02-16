@@ -24,7 +24,7 @@ class TypedClass(object):
     
     @ReadWriteProperty.setter
     def ReadWriteProperty(self, value):
-        self.value = value
+        self._value = value
     
     # --
     @clr.property(int, virtual=False)
