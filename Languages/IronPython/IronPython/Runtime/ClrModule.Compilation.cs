@@ -632,16 +632,6 @@ namespace IronPython.Runtime {
             };
         }
 
-        public static Func<PythonFunction, PythonProperty> staticproperty(
-                Type propertyType) {
-            return func => {
-                var prop = new PythonProperty();
-                prop.__init__(staticmethod(propertyType, null)(func), null, null, null);
-
-                return prop;
-            };
-        }
-
         public static Func<PythonFunction, PythonFunction> attribute(
                 ClrAttributeInfo attrib) {
             return func => {
