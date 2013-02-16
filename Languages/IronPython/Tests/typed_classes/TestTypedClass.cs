@@ -26,7 +26,6 @@ namespace IronPython.Tests {
 
         static int Main(string[] args) {
             Test("StaticMethodWithArgs", () => TypedClass.StaticMethodWithArgs(1, 2.0) == "3.0");
-            Test("StaticReadOnlyProperty", () => TypedClass.StaticReadOnlyProperty == 42);
             
             var t = new TypedClass();
             Test("ReadOnlyProperty", () => t.ReadOnlyProperty == 42);

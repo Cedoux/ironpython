@@ -31,10 +31,6 @@ class TypedClass(object):
     def NonVirtualReadOnlyProperty(self):
         return 42
     
-    @clr.staticproperty(int)
-    def StaticReadOnlyProperty():
-        return 42
-    
     # --
     #~ @clr.property(int)
     #~ @clr.attributes([Obsolete])
