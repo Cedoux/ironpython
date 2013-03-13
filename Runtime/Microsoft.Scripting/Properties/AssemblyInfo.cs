@@ -48,9 +48,6 @@ using System.Security;
 [assembly: SecurityTransparent]
 [assembly: AllowPartiallyTrustedCallers]
 [assembly: SecurityRules(SecurityRuleSet.Level1)]
-
-#if !WIN8
-[assembly: SecurityTransparent]
 #endif
 
 #if !SILVERLIGHT
@@ -59,6 +56,3 @@ using System.Security;
 [assembly: AssemblyInformationalVersion("1.1")]
 #endif
 
-#if !SILVERLIGHT && !WP75 && !WIN8
-[assembly: AllowPartiallyTrustedCallers]
-#endif

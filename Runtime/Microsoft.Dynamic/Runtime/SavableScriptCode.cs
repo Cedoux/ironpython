@@ -84,14 +84,22 @@ namespace Microsoft.Scripting {
 
             // build the assembly & type gen that all the script codes will live in...
             AssemblyGen ag = new AssemblyGen(new AssemblyName(name), dir, ext, /*emitSymbols*/false);
+            GenerateAssemblyCode(ag, codes);
+            ag.SaveAssembly();
+        }
+
+        public static void GenerateAssemblyCode(AssemblyGen ag, SavableScriptCode[] codes)
+        {
             TypeBuilder tb = ag.DefinePublicType("DLRCachedCode", typeof(object), true);
             TypeGen tg = new TypeGen(ag, tb);
             // then compile all of the code
 
             Dictionary<Type, List<CodeInfo>> langCtxBuilders = new Dictionary<Type, List<CodeInfo>>();
-            foreach (SavableScriptCode sc in codes) {
+            foreach (SavableScriptCode sc in codes)
+            {
                 List<CodeInfo> builders;
-                if (!langCtxBuilders.TryGetValue(sc.LanguageContext.GetType(), out builders)) {
+                if (!langCtxBuilders.TryGetValue(sc.LanguageContext.GetType(), out builders))
+                {
                     langCtxBuilders[sc.LanguageContext.GetType()] = builders = new List<CodeInfo>();
                 }
 
@@ -111,16 +119,19 @@ namespace Microsoft.Scripting {
             var langsWithBuilders = langCtxBuilders.ToArray();
 
             // lang ctx array
-            ilgen.EmitArray(typeof(Type), langsWithBuilders.Length, (index) => {
+            ilgen.EmitArray(typeof(Type), langsWithBuilders.Length, (index) =>
+            {
                 ilgen.Emit(OpCodes.Ldtoken, langsWithBuilders[index].Key);
                 ilgen.EmitCall(typeof(Type).GetMethod("GetTypeFromHandle", new[] { typeof(RuntimeTypeHandle) }));
             });
 
             // builders array of array
-            ilgen.EmitArray(typeof(Delegate[]), langsWithBuilders.Length, (index) => {
+            ilgen.EmitArray(typeof(Delegate[]), langsWithBuilders.Length, (index) =>
+            {
                 List<CodeInfo> builders = langsWithBuilders[index].Value;
 
-                ilgen.EmitArray(typeof(Delegate), builders.Count, (innerIndex) => {
+                ilgen.EmitArray(typeof(Delegate), builders.Count, (innerIndex) =>
+                {
                     ilgen.EmitNull();
                     ilgen.Emit(OpCodes.Ldftn, builders[innerIndex].Builder);
                     ilgen.EmitNew(
@@ -131,23 +142,30 @@ namespace Microsoft.Scripting {
             });
 
             // paths array of array
-            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) =>
+            {
                 List<CodeInfo> builders = langsWithBuilders[index].Value;
 
-                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) =>
+                {
                     ilgen.EmitString(builders[innerIndex].Code.SourceUnit.Path);
                 });
             });
 
             // 4th element in tuple - custom per-language data
-            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) => {
+            ilgen.EmitArray(typeof(string[]), langsWithBuilders.Length, (index) =>
+            {
                 List<CodeInfo> builders = langsWithBuilders[index].Value;
 
-                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) => {
+                ilgen.EmitArray(typeof(string), builders.Count, (innerIndex) =>
+                {
                     ICustomScriptCodeData data = builders[innerIndex].Code as ICustomScriptCodeData;
-                    if (data != null) {
+                    if (data != null)
+                    {
                         ilgen.EmitString(data.GetCustomScriptCodeData());
-                    } else {
+                    }
+                    else
+                    {
                         ilgen.Emit(OpCodes.Ldnull);
                     }
                 });
@@ -165,7 +183,6 @@ namespace Microsoft.Scripting {
             ));
 
             tg.FinishType();
-            ag.SaveAssembly();
         }
 
         /// <summary>

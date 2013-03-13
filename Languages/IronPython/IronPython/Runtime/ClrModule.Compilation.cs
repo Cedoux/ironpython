@@ -660,7 +660,7 @@ namespace IronPython.Runtime {
                     attributes = new List();
                     func.__dict__["clr_attributes__"] = attributes;
                 }
-                attributes.AddRange(attribs);
+                attributes.extend(attribs);
 
                 return func;
             };
