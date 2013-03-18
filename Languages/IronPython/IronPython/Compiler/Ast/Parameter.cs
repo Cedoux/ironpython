@@ -72,6 +72,8 @@ namespace IronPython.Compiler.Ast {
             set { _defaultValue = value; }
         }
 
+        public Expression Annotation { get; set; }
+
         public bool IsList {
             get {
                 return _kind == ParameterKind.List;

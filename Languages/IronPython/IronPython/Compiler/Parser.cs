@@ -1262,7 +1262,8 @@ namespace IronPython.Compiler {
                 if (MaybeEat(TokenKind.Multiply)) {
                     parameter = ParseParameterName(names, ParameterKind.List);
                     if (parameter == null) {
-                        // no parameter name, syntax error
+                        // no parameter name, syntax error in Python 2
+                        // TODO This is allowed in Py3k, and begins keyword-only params
                         return null;
                     }
                     pl.Add(parameter);
@@ -1316,7 +1317,7 @@ namespace IronPython.Compiler {
         }
 
         //  parameter ::=
-        //      identifier | "(" sublist ")"
+        //      identifier | "(" sublist ")" [":" expression]
         private Parameter ParseParameter(int position, HashSet<string> names) {
             Token t = PeekToken();
             Parameter parameter = null;
@@ -1352,6 +1353,11 @@ namespace IronPython.Compiler {
                 default:
                     ReportSyntaxError(_lookahead);
                     break;
+            }
+
+            // TODO Make this Py3k only
+            if (MaybeEat(TokenKind.Colon)) {
+                parameter.Annotation = ParseExpression();
             }
 
             return parameter;
