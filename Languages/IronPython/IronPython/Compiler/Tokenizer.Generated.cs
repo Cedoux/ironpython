@@ -29,6 +29,9 @@ namespace IronPython.Compiler {
                     }
                     return Tokens.AddToken;
                 case '-':
+                    if (NextChar('>')) {
+                        return Tokens.ArrowToken;
+                    }
                     if (NextChar('=')) {
                         return Tokens.SubtractEqualToken;
                     }

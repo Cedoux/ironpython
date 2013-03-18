@@ -80,40 +80,41 @@ namespace IronPython.Compiler {
         Assign = 73,
         Twiddle = 74,
         At = 75,
+        Arrow = 76,
 
         FirstKeyword = KeywordAnd,
         LastKeyword = KeywordWith,
-        KeywordAnd = 76,
-        KeywordAssert = 77,
-        KeywordBreak = 78,
-        KeywordClass = 79,
-        KeywordContinue = 80,
-        KeywordDef = 81,
-        KeywordDel = 82,
-        KeywordElseIf = 83,
-        KeywordElse = 84,
-        KeywordExcept = 85,
-        KeywordExec = 86,
-        KeywordFinally = 87,
-        KeywordFor = 88,
-        KeywordFrom = 89,
-        KeywordGlobal = 90,
-        KeywordIf = 91,
-        KeywordImport = 92,
-        KeywordIn = 93,
-        KeywordIs = 94,
-        KeywordLambda = 95,
-        KeywordNot = 96,
-        KeywordOr = 97,
-        KeywordPass = 98,
-        KeywordPrint = 99,
-        KeywordRaise = 100,
-        KeywordReturn = 101,
-        KeywordTry = 102,
-        KeywordWhile = 103,
-        KeywordYield = 104,
-        KeywordAs = 105,
-        KeywordWith = 106,
+        KeywordAnd = 77,
+        KeywordAssert = 78,
+        KeywordBreak = 79,
+        KeywordClass = 80,
+        KeywordContinue = 81,
+        KeywordDef = 82,
+        KeywordDel = 83,
+        KeywordElseIf = 84,
+        KeywordElse = 85,
+        KeywordExcept = 86,
+        KeywordExec = 87,
+        KeywordFinally = 88,
+        KeywordFor = 89,
+        KeywordFrom = 90,
+        KeywordGlobal = 91,
+        KeywordIf = 92,
+        KeywordImport = 93,
+        KeywordIn = 94,
+        KeywordIs = 95,
+        KeywordLambda = 96,
+        KeywordNot = 97,
+        KeywordOr = 98,
+        KeywordPass = 99,
+        KeywordPrint = 100,
+        KeywordRaise = 101,
+        KeywordReturn = 102,
+        KeywordTry = 103,
+        KeywordWhile = 104,
+        KeywordYield = 105,
+        KeywordAs = 106,
+        KeywordWith = 107,
 
         // *** END GENERATED CODE ***
 
@@ -192,6 +193,7 @@ namespace IronPython.Compiler {
         private static readonly Token symAssignToken = new SymbolToken(TokenKind.Assign, "=");
         private static readonly Token symTwiddleToken = new SymbolToken(TokenKind.Twiddle, "~");
         private static readonly Token symAtToken = new SymbolToken(TokenKind.At, "@");
+        private static readonly Token symArrowToken = new SymbolToken(TokenKind.Arrow, "->");
 
         public static Token AddToken {
             get { return symAddToken; }
@@ -367,6 +369,10 @@ namespace IronPython.Compiler {
 
         public static Token AtToken {
             get { return symAtToken; }
+        }
+
+        public static Token ArrowToken {
+            get { return symArrowToken; }
         }
 
         private static readonly Token kwAndToken = new SymbolToken(TokenKind.KeywordAnd, "and");

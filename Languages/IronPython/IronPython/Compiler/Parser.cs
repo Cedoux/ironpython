@@ -1201,8 +1201,13 @@ namespace IronPython.Compiler {
             var rEnd = GetEnd();
 
             ret = new FunctionDefinition(name, parameters);
-            PushFunction(ret);
 
+            // TODO Py3k only
+            if(MaybeEat(TokenKind.Arrow)) {
+                ret.ReturnAttribute = ParseExpression();
+            }
+
+            PushFunction(ret);
 
             Statement body = ParseClassOrFuncBody();
             FunctionDefinition ret2 = PopFunction();

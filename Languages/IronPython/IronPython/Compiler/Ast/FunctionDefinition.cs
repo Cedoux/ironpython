@@ -128,6 +128,8 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
+        public Expression ReturnAttribute { get; set; }
+
         public Statement Body {
             get { return _body; }
             set { _body = value; }
