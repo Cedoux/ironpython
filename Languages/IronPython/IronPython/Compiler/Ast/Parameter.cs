@@ -35,6 +35,7 @@ namespace IronPython.Compiler.Ast {
         Normal,
         List,
         Dictionary,
+        KeywordOnly
     };
 
     /// <summary>
@@ -81,6 +82,12 @@ namespace IronPython.Compiler.Ast {
         public bool IsDictionary {
             get {
                 return _kind == ParameterKind.Dictionary;
+            }
+        }
+
+        public bool IsKeywordOnly {
+            get {
+                return _kind == ParameterKind.KeywordOnly;
             }
         }
 

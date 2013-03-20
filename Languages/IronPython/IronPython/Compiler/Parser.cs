@@ -1254,28 +1254,22 @@ namespace IronPython.Compiler {
             List<Parameter> pl = new List<Parameter>();
             HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
             bool needDefault = false;
+            ParameterKind currentKind = ParameterKind.Normal;
             for (int position = 0; ; position++) {
                 if (MaybeEat(terminator)) break;
 
                 Parameter parameter;
 
                 if (MaybeEat(TokenKind.Multiply)) {
-                    parameter = ParseParameterName(names, ParameterKind.List);
-                    if (parameter == null) {
-                        // no parameter name, syntax error
-                        return null;
-                    }
-                    pl.Add(parameter);
-                    if (MaybeEat(TokenKind.Comma)) {
-                        Eat(TokenKind.Power);
-                        parameter = ParseParameterName(names, ParameterKind.Dictionary);
+                    if (PeekToken(TokenKind.Name)) {
+                        parameter = ParseParameterName(names, ParameterKind.List);
                         if (parameter == null) {
+                            // no parameter due to syntax error
                             return null;
                         }
                         pl.Add(parameter);
                     }
-                    Eat(terminator);
-                    break;
+                    currentKind = ParameterKind.KeywordOnly;
                 } else if (MaybeEat(TokenKind.Power)) {
                     parameter = ParseParameterName(names, ParameterKind.Dictionary);
                     if (parameter == null) {
@@ -1285,25 +1279,26 @@ namespace IronPython.Compiler {
                     pl.Add(parameter);
                     Eat(terminator);
                     break;
-                }
-
-                //
-                //  Parsing defparameter:
-                //
-                //  defparameter ::=
-                //      parameter ["=" expression]
-
-                if ((parameter = ParseParameter(position, names)) != null) {
-                    pl.Add(parameter);
-                    if (MaybeEat(TokenKind.Assign)) {
-                        needDefault = true;
-                        parameter.DefaultValue = ParseExpression();
-                    } else if (needDefault) {
-                        ReportSyntaxError(IronPython.Resources.DefaultRequired);
-                    }
                 } else {
-                    // no parameter due to syntax error
-                    return null;
+
+                    //
+                    //  Parsing defparameter:
+                    //
+                    //  defparameter ::=
+                    //      parameter ["=" expression]
+
+                    if ((parameter = ParseParameter(position, names, currentKind)) != null) {
+                        pl.Add(parameter);
+                        if (MaybeEat(TokenKind.Assign)) {
+                            needDefault = true;
+                            parameter.DefaultValue = ParseExpression();
+                        } else if (needDefault) {
+                            ReportSyntaxError(IronPython.Resources.DefaultRequired);
+                        }
+                    } else {
+                        // no parameter due to syntax error
+                        return null;
+                    }
                 }
 
                 if (!MaybeEat(TokenKind.Comma)) {
@@ -1317,7 +1312,7 @@ namespace IronPython.Compiler {
 
         //  parameter ::=
         //      identifier | "(" sublist ")"
-        private Parameter ParseParameter(int position, HashSet<string> names) {
+        private Parameter ParseParameter(int position, HashSet<string> names, ParameterKind kind) {
             Token t = PeekToken();
             Parameter parameter = null;
 
@@ -1332,7 +1327,7 @@ namespace IronPython.Compiler {
                     if (tret != null) {
                         parameter = new SublistParameter(position, tret);
                     } else if ((nameRet = ret as NameExpression) != null) {
-                        parameter = new Parameter(nameRet.Name);
+                        parameter = new Parameter(nameRet.Name, kind);
                     } else {
                         ReportSyntaxError(_lookahead);
                     }
@@ -1345,7 +1340,7 @@ namespace IronPython.Compiler {
                 case TokenKind.Name:  // identifier
                     NextToken();
                     string name = FixName((string)t.Value);
-                    parameter = new Parameter(name);
+                    parameter = new Parameter(name, kind);
                     CompleteParameterName(parameter, name, names);
                     break;
 
