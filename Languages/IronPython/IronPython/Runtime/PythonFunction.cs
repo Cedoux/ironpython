@@ -239,6 +239,8 @@ namespace IronPython.Runtime {
             }
         }
 
+        public PythonDictionary __annotations__ { get; set; }
+
         public object __call__(CodeContext/*!*/ context, params object[] args) {
             return PythonCalls.Call(context, this, args);
         }

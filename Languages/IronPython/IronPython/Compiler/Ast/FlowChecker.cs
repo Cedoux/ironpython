@@ -410,7 +410,16 @@ namespace IronPython.Compiler.Ast {
                     if (p.DefaultValue != null) {
                         p.DefaultValue.Walk(this);
                     }
+
+                    if (p.Annotation != null) {
+                        p.Annotation.Walk(this);
+                    }
                 } 
+
+                if (node.ReturnAnnotation != null) {
+                    node.ReturnAnnotation.Walk(this);
+                }
+
                 return false;
             }
         }

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -128,7 +129,7 @@ namespace IronPython.Compiler.Ast {
             }
         }
 
-        public Expression ReturnAttribute { get; set; }
+        public Expression ReturnAnnotation { get; set; }
 
         public Statement Body {
             get { return _body; }
@@ -425,7 +426,8 @@ namespace IronPython.Compiler.Ast {
                 globalName = name.Global;
             }
 
-            // emit defaults & annotations
+            var annotations = new Dictionary<string, Expression>();
+            // emit defaults & gather annotations
             int defaultCount = 0;
             for (int i = _parameters.Length - 1; i >= 0; i--) {
                 var param = _parameters[i];
@@ -435,12 +437,46 @@ namespace IronPython.Compiler.Ast {
                     defaultCount++;
                 }
 
-                // same for annotations
+                if (param.Annotation != null) {
+                    annotations.Add(param.Name, param.Annotation);
+                }
             }
 
-            // do return annotation as well
+            if (ReturnAnnotation != null) {
+                annotations.Add("return", ReturnAnnotation);
+            }
+
+            CreatePythonDict(compiler, annotations);
+
+            // set the __annotations__ attribute
+            // but until I figure out how, just pop it off
+            compiler.Instructions.EmitPop();
 
             compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
+        }
+
+        private void CreatePythonDict(LightCompiler compiler, IDictionary<string, Expression> annotations) {
+            // emit the values to store in the array
+            foreach (var item in annotations) {
+                compiler.Compile(AstUtils.Convert(item.Value, typeof(object)));
+                compiler.Compile(AstUtils.Constant(item.Key));                
+            }
+            // make the array
+            compiler.Instructions.EmitNewArrayInit(typeof(object), annotations.Count * 2);
+            // create a PythonDictionary from the array
+            compiler.EmitCall(AstMethods.MakeDictFromItems);
+        }
+
+        private static object[] FlattenForCommonDictionaryStorage<TKey, TValue>(IDictionary<TKey, TValue> dict) {
+            object[] ret = new object[dict.Count * 2];
+            int i = 0;
+            
+            foreach (var e in dict) {
+                ret[i++] = e.Value;
+                ret[i++] = e.Key;
+            }
+
+            return ret;
         }
 
         private static void CompileAssignment(LightCompiler compiler, MSAst.Expression variable, Action<LightCompiler> compileValue) {

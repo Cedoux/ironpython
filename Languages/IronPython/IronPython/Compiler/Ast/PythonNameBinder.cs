@@ -623,7 +623,17 @@ namespace IronPython.Compiler.Ast {
                 if (p.DefaultValue != null) {
                     p.DefaultValue.Walk(this);
                 }
+
+                if (p.Annotation != null) {
+                    p.Annotation.Walk(this);
+                }
             }
+
+            //process the return annotation in the outer context
+            if (node.ReturnAnnotation != null) {
+                node.ReturnAnnotation.Walk(this);
+            }
+
             // process the decorators in the outer context
             if (node.Decorators != null) {
                 foreach (Expression dec in node.Decorators) {

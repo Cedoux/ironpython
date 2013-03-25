@@ -1204,7 +1204,7 @@ namespace IronPython.Compiler {
 
             // TODO Py3k only
             if(MaybeEat(TokenKind.Arrow)) {
-                ret.ReturnAttribute = ParseExpression();
+                ret.ReturnAnnotation = ParseExpression();
             }
 
             PushFunction(ret);
