@@ -448,10 +448,6 @@ namespace IronPython.Compiler.Ast {
 
             CreatePythonDict(compiler, annotations);
 
-            // set the __annotations__ attribute
-            // but until I figure out how, just pop it off
-            compiler.Instructions.EmitPop();
-
             compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
         }
 
@@ -535,6 +531,8 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override int Run(InterpretedFrame frame) {
+                PythonDictionary annotations = (PythonDictionary)frame.Pop();
+
                 object[] defaults;
                 if (_defaultCount > 0) {
                     defaults = new object[_defaultCount];
@@ -545,11 +543,6 @@ namespace IronPython.Compiler.Ast {
                     defaults = ArrayUtils.EmptyObjects;
                 }
 
-                //PythonDictionary annotations = new PythonDictionary();
-                //if (_def.ReturnAttribute != null) {
-                //    annotations.Add("return", _def.Return
-                //}
-
                 object modName;
                 if (_name != null) {
                     modName = _name.RawValue;
@@ -558,8 +551,10 @@ namespace IronPython.Compiler.Ast {
                 }
 
                 CodeContext context = (CodeContext)frame.Pop();
-                
-                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults));
+
+                PythonFunction func = (PythonFunction)PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults);
+                func.__annotations__ = annotations;
+                frame.Push(func);
 
                 return +1;
             }
@@ -568,7 +563,9 @@ namespace IronPython.Compiler.Ast {
                 get {
                     return _defaultCount +
                         (_context == null ? 1 : 0) +
-                        (_name    == null ? 1 : 0);
+                        (_name    == null ? 1 : 0) +
+                        1   // annotations
+                        ;
                 }
             }
 
