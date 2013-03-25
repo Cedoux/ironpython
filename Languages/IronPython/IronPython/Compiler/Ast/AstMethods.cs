@@ -77,6 +77,7 @@ namespace IronPython.Compiler.Ast {
         public static readonly MethodInfo GetGlobalContext = GetMethod((Func<CodeContext, CodeContext>)PythonOps.GetGlobalContext);
         public static readonly MethodInfo GetParentContextFromFunction = GetMethod((Func<PythonFunction, CodeContext>)PythonOps.GetParentContextFromFunction);
         public static readonly MethodInfo MakeFunction = GetMethod((Func<CodeContext, FunctionCode, object, object[], object>)PythonOps.MakeFunction);
+        public static readonly MethodInfo MakeFunction3 = GetMethod((Func<CodeContext, FunctionCode, object, object[], object[], object>)PythonOps.MakeFunction3);
         public static readonly MethodInfo MakeFunctionDebug = GetMethod((Func<CodeContext/*!*/, FunctionCode, object, object[], Delegate, object>)PythonOps.MakeFunctionDebug);
         public static readonly MethodInfo MakeClosureCell = GetMethod((Func<ClosureCell>)PythonOps.MakeClosureCell);
         public static readonly MethodInfo MakeClosureCellWithValue = GetMethod((Func<object, ClosureCell>)PythonOps.MakeClosureCellWithValue);

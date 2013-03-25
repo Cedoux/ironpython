@@ -3139,6 +3139,13 @@ namespace IronPython.Runtime.Operations {
         }
 
         [NoSideEffects]
+        public static object MakeFunction3(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, object[] annotations) {
+            var func = new PythonFunction(context, funcInfo, modName, defaults, null);
+            func.__annotations__ = MakeDictFromItems(annotations);
+            return func;
+        }
+
+        [NoSideEffects]
         public static object MakeFunctionDebug(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, Delegate target) {
             funcInfo.SetDebugTarget(PythonContext.GetContext(context), target);
 

@@ -350,10 +350,21 @@ namespace IronPython.Compiler.Ast {
         /// </summary>
         internal MSAst.Expression MakeFunctionExpression() {
             List<MSAst.Expression> defaults = new List<MSAst.Expression>(0);
+            var annotations = new List<MSAst.Expression>();
             foreach (var param in _parameters) {
                 if (param.DefaultValue != null) {
                     defaults.Add(AstUtils.Convert(param.DefaultValue, typeof(object)));
                 }
+
+                if (param.Annotation != null) {
+                    annotations.Add(AstUtils.Convert(param.Annotation, typeof(object)));
+                    annotations.Add(AstUtils.Constant(param.Name, typeof(object)));
+                }
+            }
+
+            if (ReturnAnnotation != null) {
+                annotations.Add(AstUtils.Convert(ReturnAnnotation, typeof(object)));
+                annotations.Add(AstUtils.Constant("return", typeof(object)));
             }
 
             MSAst.Expression funcCode = GlobalParent.Constant(GetOrMakeFunctionCode());
@@ -380,13 +391,14 @@ namespace IronPython.Compiler.Ast {
                 );
             } else {
                 ret = Ast.Call(
-                    AstMethods.MakeFunction,                                                        // method
+                    AstMethods.MakeFunction3,                                                        // method
                     Parent.LocalContext,                                                            // 1. Emit CodeContext
                     FuncCodeExpr,                                                                   // 2. FunctionCode
                     ((IPythonGlobalExpression)GetVariableExpression(_nameVariable)).RawValue(),     // 3. module name
                     defaults.Count == 0 ?                                                           // 4. default values
                         AstUtils.Constant(null, typeof(object[])) :
-                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults)
+                        (MSAst.Expression)Ast.NewArrayInit(typeof(object), defaults),
+                    (MSAst.Expression)Ast.NewArrayInit(typeof(object), annotations)                // 5. Annotations
                 );
             }
 
@@ -396,7 +408,7 @@ namespace IronPython.Compiler.Ast {
         #region IInstructionProvider Members
 
         void IInstructionProvider.AddInstructions(LightCompiler compiler) {
-            if (_decorators != null) {
+            if ((_decorators != null) || true) {
                 // decorators aren't supported, skip using the optimized instruction.
                 compiler.Compile(Reduce());
                 return;
@@ -459,8 +471,6 @@ namespace IronPython.Compiler.Ast {
             }
             // make the array
             compiler.Instructions.EmitNewArrayInit(typeof(object), annotations.Count * 2);
-            // create a PythonDictionary from the array
-            compiler.EmitCall(AstMethods.MakeDictFromItems);
         }
 
         private static object[] FlattenForCommonDictionaryStorage<TKey, TValue>(IDictionary<TKey, TValue> dict) {
@@ -531,7 +541,7 @@ namespace IronPython.Compiler.Ast {
             }
 
             public override int Run(InterpretedFrame frame) {
-                PythonDictionary annotations = (PythonDictionary)frame.Pop();
+                object[] annotationsData = (object[])frame.Pop();
 
                 object[] defaults;
                 if (_defaultCount > 0) {
@@ -552,8 +562,7 @@ namespace IronPython.Compiler.Ast {
 
                 CodeContext context = (CodeContext)frame.Pop();
 
-                PythonFunction func = (PythonFunction)PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults);
-                func.__annotations__ = annotations;
+                PythonFunction func = (PythonFunction)PythonOps.MakeFunction3(context, _def.FunctionCode, modName, defaults, annotationsData);
                 frame.Push(func);
 
                 return +1;
