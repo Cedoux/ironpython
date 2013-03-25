@@ -424,17 +424,22 @@ namespace IronPython.Compiler.Ast {
             }
 
             // emit defaults
-            int defaultCount = 0;
+            int defaultCount = 0, kwDefaultCount = 0;
             for (int i = _parameters.Length - 1; i >= 0; i--) {
                 var param = _parameters[i];
 
                 if (param.DefaultValue != null) {
                     compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
-                    defaultCount++;
+                    if (param.Kind == ParameterKind.Normal) {
+                        defaultCount++;
+                    } else if (param.IsKeywordOnly) {
+                        Debug.Assert(defaultCount == 0);
+                        kwDefaultCount++;
+                    }
                 }
             }
 
-            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
+            compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, kwDefaultCount, globalName));
         }
 
         private static void CompileAssignment(LightCompiler compiler, MSAst.Expression variable, Action<LightCompiler> compileValue) {
@@ -479,20 +484,27 @@ namespace IronPython.Compiler.Ast {
 
         class FunctionDefinitionInstruction : Instruction {
             private readonly FunctionDefinition _def;
-            private readonly int _defaultCount;
+            private readonly int _defaultCount, _kwDefaultCount;
             private readonly CodeContext _context;
             private readonly PythonGlobal _name;
 
-            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, PythonGlobal name) {
+            public FunctionDefinitionInstruction(CodeContext context, FunctionDefinition/*!*/ definition, int defaultCount, int kwDefaultCount, PythonGlobal name) {
                 Assert.NotNull(definition);
 
                 _context = context;
                 _defaultCount = defaultCount;
+                _kwDefaultCount = kwDefaultCount;
                 _def = definition;
                 _name = name;
             }
 
             public override int Run(InterpretedFrame frame) {
+                IDictionary<string, object> kwDefaults = new Dictionary<string, object>();
+                for (int i = 0; i < _defaultCount; i++) {
+                    // TODO get the param name somehow
+                    kwDefaults.Add(xxx, frame.Pop());
+                }
+                
                 object[] defaults;
                 if (_defaultCount > 0) {
                     defaults = new object[_defaultCount];
@@ -512,7 +524,7 @@ namespace IronPython.Compiler.Ast {
 
                 CodeContext context = (CodeContext)frame.Pop();
                 
-                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults));
+                frame.Push(PythonOps.MakeFunction(context, _def.FunctionCode, modName, defaults, kwDefaults));
 
                 return +1;
             }

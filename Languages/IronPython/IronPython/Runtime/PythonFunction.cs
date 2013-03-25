@@ -62,6 +62,7 @@ namespace IronPython.Runtime {
         [ThreadStatic] private static int DepthSlow;    // current depth stored in a real thread static with fast depth runs out
         [MultiRuntimeAware]
         private static int _CurrentId = 1;              // The current ID for functions which are called in complex ways.
+private  PythonDictionary _kwdefaults;
 
         /// <summary>
         /// Python ctor - maps to function.__new__
@@ -139,6 +140,15 @@ namespace IronPython.Runtime {
                     _defaults = value.ToArray();
                 }
                 _compat = CalculatedCachedCompat();
+            }
+        }
+
+        public PythonDictionary __kwdefaults__ {
+            get {
+                return _kwdefaults;
+            }
+            set {
+                _kwdefaults = value;
             }
         }
 

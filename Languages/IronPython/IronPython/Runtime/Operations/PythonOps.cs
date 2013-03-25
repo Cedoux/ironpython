@@ -3139,6 +3139,11 @@ namespace IronPython.Runtime.Operations {
         }
 
         [NoSideEffects]
+        public static object MakeFunction(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, IDictionary<string, object> kwDefaults) {
+            return new PythonFunction(context, funcInfo, modName, defaults, null);
+        }
+
+        [NoSideEffects]
         public static object MakeFunctionDebug(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, Delegate target) {
             funcInfo.SetDebugTarget(PythonContext.GetContext(context), target);
 
