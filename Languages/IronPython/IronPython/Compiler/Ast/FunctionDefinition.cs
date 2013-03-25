@@ -425,7 +425,7 @@ namespace IronPython.Compiler.Ast {
                 globalName = name.Global;
             }
 
-            // emit defaults
+            // emit defaults & annotations
             int defaultCount = 0;
             for (int i = _parameters.Length - 1; i >= 0; i--) {
                 var param = _parameters[i];
@@ -434,7 +434,11 @@ namespace IronPython.Compiler.Ast {
                     compiler.Compile(AstUtils.Convert(param.DefaultValue, typeof(object)));
                     defaultCount++;
                 }
+
+                // same for annotations
             }
+
+            // do return annotation as well
 
             compiler.Instructions.Emit(new FunctionDefinitionInstruction(globalContext, this, defaultCount, globalName));
         }
@@ -504,6 +508,11 @@ namespace IronPython.Compiler.Ast {
                 } else {
                     defaults = ArrayUtils.EmptyObjects;
                 }
+
+                //PythonDictionary annotations = new PythonDictionary();
+                //if (_def.ReturnAttribute != null) {
+                //    annotations.Add("return", _def.Return
+                //}
 
                 object modName;
                 if (_name != null) {
