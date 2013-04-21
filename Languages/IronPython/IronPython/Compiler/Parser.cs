@@ -2293,7 +2293,7 @@ namespace IronPython.Compiler {
             }
 
             Token t = PeekToken();
-            if (t.Kind != TokenKind.RightParenthesis && t.Kind != TokenKind.Multiply && t.Kind != TokenKind.Power) {
+            if (t.Kind != TokenKind.RightParenthesis && t.Kind != TokenKind.Multiply && t.Kind != TokenKind.Power && t.Kind != TokenKind.BitwiseAnd) {
                 var start = GetStart();
                 Expression e = ParseExpression();
                 if (e is ErrorExpression) {
@@ -2387,6 +2387,16 @@ namespace IronPython.Compiler {
                 } else if (MaybeEat(TokenKind.Power)) {
                     Expression t = ParseExpression();
                     a = new Arg("**", t);
+                } else if (MaybeEat(TokenKind.BitwiseAnd)) {
+                    a = new Arg("&", null);
+
+                    // Must be followed by a comma or terminator
+                    Token next = PeekToken();
+                    if (next.Kind != TokenKind.Comma || next.Kind != terminator) {
+                        ReportSyntaxError(_lookahead);
+                        break;
+                    }
+
                 } else {
                     Expression e = ParseExpression();
                     if (MaybeEat(TokenKind.Assign)) {

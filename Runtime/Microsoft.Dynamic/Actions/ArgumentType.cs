@@ -46,6 +46,12 @@ namespace Microsoft.Scripting.Actions {
         /// </summary>
         Dictionary,
 
+        /// <summary>
+        /// Argument that is passed a block.
+        /// In Python: foo(&) -> (x): pass
+        /// </summary>
+        Block,
+
 
         Instance
     };

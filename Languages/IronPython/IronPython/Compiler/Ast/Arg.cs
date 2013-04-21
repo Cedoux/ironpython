@@ -54,6 +54,8 @@ namespace IronPython.Compiler.Ast {
                 return new Argument(ArgumentType.List);
             } else if (_name == "**") {
                 return new Argument(ArgumentType.Dictionary);
+            } else if (_name == "&") {
+                return new Argument(ArgumentType.Block);
             } else {
                 return new Argument(_name);
             }
