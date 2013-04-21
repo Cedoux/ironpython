@@ -728,11 +728,27 @@ namespace IronPython.Compiler {
                     aug.SetLoc(_globalParent, ret.StartIndex, GetEnd());
                     return aug;
                 } else {
+                    ret = MaybeParseBlock(ret);
                     Statement stmt = new ExpressionStatement(ret);
                     stmt.SetLoc(_globalParent, ret.IndexSpan);
                     return stmt;
                 }
             }
+        }
+
+        private Expression MaybeParseBlock(Expression ret) {
+            var call = ret as CallExpression;
+            if (call == null || !MaybeEat(TokenKind.Arrow))
+                return ret;
+
+            Eat(TokenKind.LeftParenthesis);
+
+            Parameter[] parameters = ParseVarArgsList(TokenKind.RightParenthesis);
+            Statement body = ParseClassOrFuncBody();
+
+            var func = new FunctionDefinition("$block", parameters, body);
+
+            return ret;
         }
 
         private PythonOperator GetAssignOperator(Token t) {

@@ -48,7 +48,7 @@ namespace Microsoft.Scripting.Actions {
 
         /// <summary>
         /// Argument that is passed a block.
-        /// In Python: foo(&) -> (x): pass
+        /// In Python: foo(&amp;) -> (x): pass
         /// </summary>
         Block,
 
