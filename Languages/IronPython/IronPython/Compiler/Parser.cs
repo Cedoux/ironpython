@@ -33,6 +33,8 @@ using System.Numerics;
 using Microsoft.Scripting.Math;
 #endif
 
+using MSAst = System.Linq.Expressions;
+
 namespace IronPython.Compiler {
 
     public class Parser : IDisposable { // TODO: remove IDisposable
@@ -694,6 +696,66 @@ namespace IronPython.Compiler {
             }
         }
 
+        //internal class RewriteBlockReferences : PythonWalker {
+        //    private string blockName;
+
+        //    public RewriteBlockReferences(string blockName) {
+        //        this.blockName = blockName;
+        //    }
+
+        //    public override bool Walk(NameExpression node) {
+        //        if (node.Name == "&") {
+        //            node.Name = blockName;
+        //            return true;
+        //        }
+        //        return base.Walk(node);
+        //    }
+        //}
+
+
+        internal class RewriteBlockReferences : MSAst.ExpressionVisitor {
+            private string blockName;
+
+            public RewriteBlockReferences(string blockName) {
+                this.blockName = blockName;
+            }
+
+            protected override MSAst.Expression VisitExtension(MSAst.Expression node) {
+                var expr_stmt = node as ExpressionStatement;
+                if (expr_stmt != null) {
+                    return new ExpressionStatement((Expression)Visit(expr_stmt.Expression));
+                }
+
+                var call_expr = node as CallExpression;
+                if (call_expr != null) {
+                    Arg[] new_args = new Arg[call_expr.Args.Count];
+                    for (int i = 0; i < new_args.Length; ++i) {
+                        new_args[i] = (Arg)Visit(call_expr.Args[i]);
+                    }
+                    return new CallExpression(call_expr.Target, new_args);
+                }
+
+                var arg = node as Arg;
+                if (arg != null) {
+                    return new Arg((Expression)Visit(arg.Expression));
+                }
+
+                var name_expr = node as NameExpression;
+                if (name_expr != null) {
+                    if (name_expr.Name == "&") {
+                        var name = new NameExpression(this.blockName);
+                        name.IndexSpan = name_expr.IndexSpan;
+                        return name;
+                    } else {
+                        return node;
+                    }
+                }
+
+                return Visit(node);
+            }
+        }
+
+
         // expr_stmt: expression_list
         // expression_list: expression ( "," expression )* [","] 
         // assignment_stmt: (target_list "=")+ (expression_list | yield_expression) 
@@ -728,18 +790,27 @@ namespace IronPython.Compiler {
                     aug.SetLoc(_globalParent, ret.StartIndex, GetEnd());
                     return aug;
                 } else {
-                    ret = MaybeParseBlock(ret);
                     Statement stmt = new ExpressionStatement(ret);
                     stmt.SetLoc(_globalParent, ret.IndexSpan);
+
+                    var block = MaybeParseBlock(ret);
+                    if (block != null) {
+                        // create BlockStatement
+                        // or SuiteStatement w/ FunctionDefn, ExprStmt
+
+                        var v = new RewriteBlockReferences(block.Name);
+                        Statement expr = (Statement)v.Visit(stmt);
+                        stmt = new SuiteStatement(new[] { block, expr });
+                    }
+
                     return stmt;
                 }
             }
         }
 
-        private Expression MaybeParseBlock(Expression ret) {
-            var call = ret as CallExpression;
-            if (call == null || !MaybeEat(TokenKind.Arrow))
-                return ret;
+        private FunctionDefinition MaybeParseBlock(Expression ret) {
+            if (!MaybeEat(TokenKind.Arrow))
+                return null;
 
             Eat(TokenKind.LeftParenthesis);
 
@@ -748,7 +819,7 @@ namespace IronPython.Compiler {
 
             var func = new FunctionDefinition("$block", parameters, body);
 
-            return ret;
+            return func;
         }
 
         private PythonOperator GetAssignOperator(Token t) {
@@ -2065,6 +2136,7 @@ namespace IronPython.Compiler {
                     NextToken();
                     return FinishStringConversion();
                 case TokenKind.Name:            // identifier
+                case TokenKind.BitwiseAnd:
                     NextToken();
                     string name = (string)t.Value;
                     if (_sink != null) {
@@ -2073,6 +2145,10 @@ namespace IronPython.Compiler {
                     ret = new NameExpression(FixName(name));
                     ret.SetLoc(_globalParent, GetStart(), GetEnd());
                     return ret;
+                //case TokenKind.BitwiseAnd:
+                //    // Add a BlockReferenceExpression?
+                //    NextToken();
+
                 case TokenKind.Constant:        // literal
                     NextToken();
                     var start = GetStart();
@@ -2309,7 +2385,7 @@ namespace IronPython.Compiler {
             }
 
             Token t = PeekToken();
-            if (t.Kind != TokenKind.RightParenthesis && t.Kind != TokenKind.Multiply && t.Kind != TokenKind.Power && t.Kind != TokenKind.BitwiseAnd) {
+            if (t.Kind != TokenKind.RightParenthesis && t.Kind != TokenKind.Multiply && t.Kind != TokenKind.Power) {
                 var start = GetStart();
                 Expression e = ParseExpression();
                 if (e is ErrorExpression) {
@@ -2403,16 +2479,6 @@ namespace IronPython.Compiler {
                 } else if (MaybeEat(TokenKind.Power)) {
                     Expression t = ParseExpression();
                     a = new Arg("**", t);
-                } else if (MaybeEat(TokenKind.BitwiseAnd)) {
-                    a = new Arg("&", null);
-
-                    // Must be followed by a comma or terminator
-                    Token next = PeekToken();
-                    if (next.Kind != TokenKind.Comma || next.Kind != terminator) {
-                        ReportSyntaxError(_lookahead);
-                        break;
-                    }
-
                 } else {
                     Expression e = ParseExpression();
                     if (MaybeEat(TokenKind.Assign)) {

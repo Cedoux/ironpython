@@ -3141,7 +3141,7 @@ namespace IronPython.Runtime.Operations {
         [NoSideEffects]
         public static object MakeFunction3(CodeContext/*!*/ context, FunctionCode funcInfo, object modName, object[] defaults, object[] annotations) {
             var func = new PythonFunction(context, funcInfo, modName, defaults, null);
-            func.__annotations__ = MakeDictFromItems(annotations);
+            func.__annotations__ = annotations.Length > 0 ? MakeDictFromItems(annotations) : new PythonDictionary();
             return func;
         }
 
