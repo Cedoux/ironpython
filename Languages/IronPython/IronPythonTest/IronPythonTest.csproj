@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttrInjectorTest.cs" />
+    <Compile Include="Cases\IronPythonCases.cs" />
     <Compile Include="ExtensionMethodTest.cs" />
     <Compile Include="LightExceptionTests.cs" />
     <Compile Include="MemberOverloadTest.cs" />
@@ -56,8 +57,10 @@
     <Compile Include="TestBuiltinModule.cs" />
     <Compile Include="TypeDescriptor.cs" />
     <AppDesigner Include="Properties\" />
+    <Compile Include="Util\IniParser.cs" />
+    <Compile Include="Util\TestManifest.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'" >
+  <ItemGroup Condition=" '$(IsFullFramework)' == 'true' and '$(TargetFrameworkVersion)' != 'v3.5'">
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
@@ -78,6 +81,14 @@
       <Project>{95289EA9-5778-489D-AB48-F81F2CE2DA32}</Project>
       <Name>IronPython</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="nunitlite">
+      <HintPath>..\..\..\..\jdhardy-ironpython\Util\NUnitLite\net-4.0\nunitlite.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="IronPythonCasesManifest.ini" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

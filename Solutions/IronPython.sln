@@ -61,6 +61,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Scripting.Core", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPython.SQLite", "..\Languages\IronPython\IronPython.SQLite\IronPython.SQLite.csproj", "{4A617A40-2BA7-4713-AAFE-F90C4325C581}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPythonTest.Desktop", "..\Languages\IronPython\IronPythonTest.Desktop\IronPythonTest.Desktop.csproj", "{79446DDF-421C-4695-9859-5E01F0D95830}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		AndroidDebug|Any CPU = AndroidDebug|Any CPU
@@ -514,6 +516,40 @@ Global
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Debug|Any CPU.Build.0 = WP7Debug|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Release|Any CPU.ActiveCfg = WP7Release|Any CPU
 		{4A617A40-2BA7-4713-AAFE-F90C4325C581}.WP7Release|Any CPU.Build.0 = WP7Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.AndroidDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.AndroidDebug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.AndroidRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.AndroidRelease|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.FxCop|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.FxCop|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight4Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight4Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight4Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight4Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight5Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight5Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight5Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Silverlight5Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v2Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v2Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v2Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v2Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v45Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v45Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v45Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.v45Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.Win8Release|Any CPU.Build.0 = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.WP7Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.WP7Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.WP7Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79446DDF-421C-4695-9859-5E01F0D95830}.WP7Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,72 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using IronPython.Hosting;
+using IronPythonTest.Util;
+using Microsoft.Scripting;
+using NUnit.Framework;
+using NUnit.Framework.Api;
+
+namespace IronPythonTest.Cases {
+    [TestFixture(Category="IronPython")]
+    public class IronPythonCases {
+        [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
+        public int IronPythonTest(IronPythonCase testcase) {
+            var engine = Python.CreateEngine();
+            var source = engine.CreateScriptSourceFromString(
+                testcase.Text, testcase.Path, SourceCodeKind.File);
+            return source.ExecuteProgram();
+        }
+
+    }
+
+    public class IronPythonCase {
+        public IronPythonCase(string path) {
+            this.Path = path;
+            this.Text = LoadTest(path);
+            this.Name = GetName(path);
+        }
+
+        public string Path { get; private set; }
+        public string Text { get; private set; }
+        public string Name { get; private set; }
+
+        private static string LoadTest(string path) {
+            return File.ReadAllText(path);
+        }
+
+        private static string GetName(string path) {
+            return System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+
+        public override string ToString() {
+            return this.Name;
+        }
+    }
+
+    class IronPythonCaseGenerator : IEnumerable {
+        TestManifest manifest = new TestManifest(typeof(IronPythonCases));
+
+        public IEnumerator GetEnumerator() {
+            foreach (var testcase in GetTests()) {
+                var result = new TestCaseData(testcase)
+                    .SetName(testcase.Name)
+                    .Returns(0);
+
+                if (this.manifest[testcase.Name].Skip)
+                    result.RunState = RunState.Skipped;
+
+                yield return result;
+            }
+        }
+
+        private IEnumerable<IronPythonCase> GetTests() {
+            return Directory.EnumerateFiles(@"..\..\Languages\IronPython\Tests", "test_*.py")
+                .Select(file => new IronPythonCase(Path.GetFullPath(file)))
+                .OrderBy(testcase => testcase.Name);
+        }
+
+    }
+
+}
