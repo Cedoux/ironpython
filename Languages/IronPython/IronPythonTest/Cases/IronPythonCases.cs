@@ -5,16 +5,33 @@ using System.Linq;
 using IronPython.Hosting;
 using IronPythonTest.Util;
 using Microsoft.Scripting;
+using Microsoft.Scripting.Hosting;
 using NUnit.Framework;
 using NUnit.Framework.Api;
 
 namespace IronPythonTest.Cases {
     [TestFixture(Category="IronPython")]
     public class IronPythonCases {
+        ScriptEngine engine;
+
+        [TestFixtureSetUp]
+        public void FixtureSetUp() {
+            this.engine = Python.CreateEngine(new Dictionary<string, object> {
+                {"Debug", true },
+                {"Frames", true},
+                {"FullFrames", true}
+            });
+
+            var executable = System.Reflection.Assembly.GetEntryAssembly().Location;
+            this.engine.SetHostVariables(
+                Path.GetDirectoryName(executable),
+                executable,
+                "");
+        }
+
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
         public int IronPythonTest(IronPythonCase testcase) {
-            var engine = Python.CreateEngine();
-            var source = engine.CreateScriptSourceFromString(
+            var source = this.engine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
             return source.ExecuteProgram();
         }

@@ -596,8 +596,6 @@ namespace IronPython.Runtime {
             EnsureModuleState();
 
             lock (_moduleState) {
-                Debug.Assert(_moduleState.ContainsKey(key));
-
                 return _moduleState[key];
             }
         }
