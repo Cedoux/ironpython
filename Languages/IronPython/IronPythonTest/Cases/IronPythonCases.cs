@@ -30,7 +30,7 @@ namespace IronPythonTest.Cases {
         }
 
         [Test, TestCaseSource(typeof(IronPythonCaseGenerator))]
-        public int IronPythonTest(IronPythonCase testcase) {
+        public int IronPythonTests(IronPythonCase testcase) {
             var source = this.engine.CreateScriptSourceFromString(
                 testcase.Text, testcase.Path, SourceCodeKind.File);
             return source.ExecuteProgram();
