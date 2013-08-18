@@ -79,7 +79,7 @@ namespace IronPythonTest.Cases {
         }
 
         private IEnumerable<IronPythonCase> GetTests() {
-            return Directory.EnumerateFiles(@"..\..\Languages\IronPython\Tests", "test_*.py")
+            return Directory.GetFiles(@"..\..\Languages\IronPython\Tests", "test_*.py")
                 .Select(file => new IronPythonCase(Path.GetFullPath(file)))
                 .OrderBy(testcase => testcase.Name);
         }

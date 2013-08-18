@@ -8,15 +8,17 @@
     <RootNamespace>IronPythonTest</RootNamespace>
     <AssemblyName>IronPythonTest</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FxCop|AnyCPU' ">
-  </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <NUnitLiteFramework>net-4.0</NUnitLiteFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <NUnitLiteFramework>net-4.0</NUnitLiteFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Debug|AnyCPU' ">
+    <NUnitLiteFramework>net-3.5</NUnitLiteFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'v2Release|AnyCPU' ">
+    <NUnitLiteFramework>net-3.5</NUnitLiteFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -85,7 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="nunitlite">
-      <HintPath>..\..\..\..\jdhardy-ironpython\Util\NUnitLite\net-4.0\nunitlite.dll</HintPath>
+      <HintPath>..\..\..\Util\NUnitLite\$(NUnitLiteFramework)\nunitlite.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
